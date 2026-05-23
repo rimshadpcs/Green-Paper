@@ -37,6 +37,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
 import com.rimapps.arqtest.domain.model.AmountInputField
 import com.rimapps.arqtest.presentation.exchange.flagDrawableResId
@@ -89,7 +90,7 @@ fun CurrencyAmountCard(
                 painter = painterResource(id = currencyCode.flagDrawableResId()),
                 contentDescription = "$currencyCode flag",
                 modifier = Modifier
-                    .size(38.dp)
+                    .size(16.dp)
                     .clip(CircleShape)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -97,7 +98,8 @@ fun CurrencyAmountCard(
                 text = currencyCode,
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp
                 )
             )
             if (isCurrencySelectable) {
@@ -118,7 +120,8 @@ fun CurrencyAmountCard(
                 textStyle = MaterialTheme.typography.titleLarge.copy(
                     color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.End,
-                    fontWeight = FontWeight.ExtraBold
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp
                 ),
                 singleLine = true,
                 visualTransformation = AmountVisualTransformation,

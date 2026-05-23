@@ -15,7 +15,7 @@ fun SwapIcon(
     color: Color = Color.White
 ) {
     Canvas(modifier = modifier) {
-        val strokeWidth = 2.8.dp.toPx()
+        val strokeWidth = 2.dp.toPx()
         val centerX = size.width / 2f
         val topY = size.height * 0.22f
         val bottomY = size.height * 0.72f

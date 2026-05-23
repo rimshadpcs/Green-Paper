@@ -1,11 +1,11 @@
 package com.rimapps.arqtest.presentation.exchange.components
 
-import android.graphics.fonts.Font
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.presentation.exchange.ExchangeUiState
 import com.rimapps.arqtest.presentation.util.toRateDisplay
 import java.math.BigDecimal
@@ -23,6 +23,7 @@ fun RateInfoText(
         color = MaterialTheme.colorScheme.primary,
         style = MaterialTheme.typography.bodyLarge,
         fontWeight = FontWeight.ExtraBold,
+        fontSize = 20.sp,
         modifier = modifier
     )
 }

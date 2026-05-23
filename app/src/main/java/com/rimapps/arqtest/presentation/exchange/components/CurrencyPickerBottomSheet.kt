@@ -22,6 +22,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.presentation.exchange.toUiModel
 
@@ -51,12 +52,12 @@ fun CurrencyPickerBottomSheet(
                 Text(
                     text = "Choose currency",
                     color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLarge.copy(fontSize = 24.sp),
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.ExtraBold
                 )
                 IconButton(onClick = onDismiss) {
-                    CloseIcon(modifier = Modifier.size(24.dp))
+                    CloseIcon(modifier = Modifier.size(14.dp))
                 }
             }
             Spacer(modifier = Modifier.height(18.dp))
@@ -92,14 +93,14 @@ private fun CloseIcon(
             color = color,
             start = Offset(size.width * 0.22f, size.height * 0.22f),
             end = Offset(size.width * 0.78f, size.height * 0.78f),
-            strokeWidth = 2.dp.toPx(),
+            strokeWidth = 1.5.dp.toPx(),
             cap = StrokeCap.Round
         )
         drawLine(
             color = color,
             start = Offset(size.width * 0.78f, size.height * 0.22f),
             end = Offset(size.width * 0.22f, size.height * 0.78f),
-            strokeWidth = 2.dp.toPx(),
+            strokeWidth = 1.5.dp.toPx(),
             cap = StrokeCap.Round
         )
     }

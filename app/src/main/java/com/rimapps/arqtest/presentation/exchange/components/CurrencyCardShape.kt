@@ -12,8 +12,8 @@ enum class CurrencyCardCutout {
 
 fun currencyCardShape(cutout: CurrencyCardCutout) = GenericShape { size, _ ->
     val radius = min(size.height * 0.25f, size.width * 0.8f)
-    val notchHalfWidth = size.height * 0.30f
-    val notchDepth = size.height * 0.20f
+    val notchHalfWidth = size.height * 0.20f
+    val notchDepth = size.height * 0.16f
     val centerX = size.width / 2f
 
     moveTo(radius, 0f)

@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.presentation.exchange.model.CurrencyUiModel
 
 @Composable
@@ -49,7 +50,7 @@ fun CurrencyListItem(
     ) {
         Box(
             modifier = Modifier
-                .size(46.dp)
+                .size(40.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .background(MaterialTheme.colorScheme.background),
             contentAlignment = Alignment.Center
@@ -58,7 +59,7 @@ fun CurrencyListItem(
                 painter = painterResource(id = currency.flagResId),
                 contentDescription = "${currency.code} flag",
                 modifier = Modifier
-                    .size(34.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
             )
         }
@@ -66,7 +67,7 @@ fun CurrencyListItem(
         Text(
             text = currency.code,
             color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleLarge.copy(fontSize = 16.sp),
             modifier = Modifier.weight(1f),
             fontWeight = FontWeight.ExtraBold
         )

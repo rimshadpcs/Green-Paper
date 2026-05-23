@@ -21,22 +21,21 @@ fun SwapButton(
 ) {
 
     Box(
-        modifier = modifier.size(36.dp),
+        modifier = modifier.size(24.dp),
         contentAlignment = Alignment.Center
     ) {
         CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
             IconButton(
                 onClick = onClick,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.primary)
             ) {
                 SwapIcon(
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }
     }
 }
-
