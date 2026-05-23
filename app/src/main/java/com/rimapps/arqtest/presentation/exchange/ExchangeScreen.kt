@@ -68,20 +68,24 @@ private fun ExchangeScreenContent(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 24.dp),
+                        .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.Top
                 ) {
                     Spacer(modifier = Modifier.height(72.dp))
                     Text(
                         text = "Exchange calculator",
                         color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.titleLarge.copy(fontSize = 27.sp),
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontSize = 29.sp,
+                            letterSpacing = (-2).sp
+                        ),
                         fontWeight = FontWeight.ExtraBold,
                         maxLines = 1,
+                        softWrap = false,
                         overflow = TextOverflow.Clip,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     RateInfoText(
                         currentRate = state.currentRate,
                         selectedCurrencyCode = state.selectedCurrencyCode,
@@ -102,7 +106,7 @@ private fun ExchangeScreenContent(
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(196.dp)
+                            .height(188.dp)
                     ) {
                         CurrencyAmountCard(
                             currencyCode = state.topCurrencyCode,
