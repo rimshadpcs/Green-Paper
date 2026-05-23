@@ -7,8 +7,9 @@ import com.rimapps.arqtest.domain.model.CurrencyAmount
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import java.math.BigDecimal
 import java.math.MathContext
+import javax.inject.Inject
 
-class ConvertCurrencyUseCase {
+class ConvertCurrencyUseCase @Inject constructor() {
     operator fun invoke(
         input: CurrencyAmount,
         exchangeRate: ExchangeRate,
