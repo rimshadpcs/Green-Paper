@@ -15,6 +15,8 @@ data class ExchangeUiState(
     val bottomCurrencyCode: String = DEFAULT_QUOTE_CURRENCY,
     val topAmount: String = "",
     val bottomAmount: String = "",
+    val topAmountError: String? = null,
+    val bottomAmountError: String? = null,
     val currentRate: BigDecimal? = null,
     val lastUpdated: String? = null,
     val isCurrencyPickerVisible: Boolean = false,

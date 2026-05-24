@@ -124,6 +124,134 @@ class ExchangeViewModelTest {
     }
 
     @Test
+    fun `zero trailing decimal amount is accepted without error`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "0."
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("0.", state.topAmount)
+        assertEquals("0.00", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `letters are sanitized from amount input`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "a1b2.c3"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("12.3", state.topAmount)
+        assertEquals("221.40", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `negative amount input is sanitized to positive digits`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "-12.50"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("12.50", state.topAmount)
+        assertEquals("225.00", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `multiple decimal separators are sanitized`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "12.3.4"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("12.34", state.topAmount)
+        assertEquals("222.12", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `large amount input shows inline field error`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "9999999999999999999"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("9999999999999999999", state.topAmount)
+        assertEquals("", state.bottomAmount)
+        assertEquals("Amount is too large", state.topAmountError)
+        assertEquals(null, state.bottomAmountError)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `USDc decimals are capped to six places`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "1.1234567"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("1.123456", state.topAmount)
+        assertEquals("20.22", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `fiat decimals are capped to two places`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Bottom,
+                value = "18.4097"
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("1.022222", state.topAmount)
+        assertEquals("18.40", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
     fun `swap clicked swaps top and bottom currencies`() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
