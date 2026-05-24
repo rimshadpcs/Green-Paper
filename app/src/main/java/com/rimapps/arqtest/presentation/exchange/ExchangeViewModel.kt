@@ -3,6 +3,7 @@ package com.rimapps.arqtest.presentation.exchange
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.domain.model.AmountInputField
 import com.rimapps.arqtest.domain.model.ConversionDirection
 import com.rimapps.arqtest.domain.model.CurrencyAmount
@@ -18,13 +19,15 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ExchangeViewModel @Inject constructor(
     private val exchangeRepository: ExchangeRepository,
-    private val convertCurrencyUseCase: ConvertCurrencyUseCase
+    private val convertCurrencyUseCase: ConvertCurrencyUseCase,
+    private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ExchangeUiState(isLoading = true))
     val uiState: StateFlow<ExchangeUiState> = _uiState.asStateFlow()
@@ -32,6 +35,7 @@ class ExchangeViewModel @Inject constructor(
     private var lastEditedField: AmountInputField = AmountInputField.Top
 
     init {
+        observeNetworkChanges()
         loadExchangeData(isRefresh = false)
     }
 
@@ -113,6 +117,19 @@ class ExchangeViewModel @Inject constructor(
         }
     }
 
+    private fun observeNetworkChanges() {
+        viewModelScope.launch {
+            networkMonitor.isOnline
+                .distinctUntilChanged()
+                .collect { isOnline ->
+                    val state = uiState.value
+                    if (isOnline && state.isUsingCachedRates && !state.isRefreshing && !state.isLoading) {
+                        loadExchangeData(isRefresh = true)
+                    }
+                }
+        }
+    }
+
     private suspend fun loadExchangeRates(
         currencyCodes: List<String>,
         selectedCurrencyCode: String
@@ -121,11 +138,13 @@ class ExchangeViewModel @Inject constructor(
         when (val ratesResult = exchangeRepository.getExchangeRates(requestedCodes)) {
             is AppResult.Success -> {
                 _uiState.update { state ->
-                    val selectedRate = ratesResult.data.rateFor(selectedCurrencyCode)
+                    val rates = ratesResult.data.rates
+                    val selectedRate = rates.rateFor(selectedCurrencyCode)
                     state.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        exchangeRates = ratesResult.data,
+                        exchangeRates = rates,
+                        isUsingCachedRates = ratesResult.data.isCached,
                         currentRate = selectedRate?.midpoint,
                         lastUpdated = selectedRate?.updatedAt,
                         errorMessage = selectedRate.missingRateMessage(selectedCurrencyCode)
@@ -138,6 +157,7 @@ class ExchangeViewModel @Inject constructor(
                     state.copy(
                         isLoading = false,
                         isRefreshing = false,
+                        isUsingCachedRates = false,
                         errorMessage = ratesResult.message
                     )
                 }

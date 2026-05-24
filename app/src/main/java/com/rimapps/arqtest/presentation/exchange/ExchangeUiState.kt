@@ -19,6 +19,7 @@ data class ExchangeUiState(
     val bottomAmountError: String? = null,
     val currentRate: BigDecimal? = null,
     val lastUpdated: String? = null,
+    val isUsingCachedRates: Boolean = false,
     val isCurrencyPickerVisible: Boolean = false,
     val currencySearchQuery: String = ""
 ) {

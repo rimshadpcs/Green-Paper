@@ -103,6 +103,10 @@ private fun ExchangeScreenContent(
                         onRefreshClick = { onEvent(ExchangeUiEvent.RefreshClicked) },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    if (state.isUsingCachedRates) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CachedRatesBanner(modifier = Modifier.fillMaxWidth())
+                    }
                     Spacer(modifier = Modifier.height(28.dp))
 
                     state.errorMessage?.let { message ->
@@ -192,6 +196,22 @@ private fun ExchangeScreenContent(
             }
         }
     }
+}
+
+@Composable
+private fun CachedRatesBanner(
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = "Showing cached rates. Go online to refresh.",
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        style = MaterialTheme.typography.bodySmall,
+        fontSize = 12.sp,
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+    )
 }
 
 @Composable
