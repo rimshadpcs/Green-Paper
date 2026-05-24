@@ -1,5 +1,6 @@
 package com.rimapps.arqtest.presentation.exchange
 
+import androidx.lifecycle.viewModelScope
 import com.rimapps.arqtest.core.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.domain.model.AmountInputField
@@ -10,9 +11,11 @@ import com.rimapps.arqtest.domain.repository.ExchangeRepository
 import com.rimapps.arqtest.domain.usecase.ConvertCurrencyUseCase
 import java.math.BigDecimal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,11 +29,13 @@ class ExchangeViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
+    private val createdViewModels = mutableListOf<ExchangeViewModel>()
+
     @Test
-    fun `initial load success`() = runTest {
+    fun `initial load success`() = runViewModelTest {
         val viewModel = viewModel()
 
-        advanceUntilIdle()
+        runCurrent()
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
@@ -43,14 +48,14 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `initial load failure`() = runTest {
+    fun `initial load failure`() = runViewModelTest {
         val viewModel = viewModel(
             repository = FakeExchangeRepository(
                 currenciesResult = AppResult.Error("Unable to load currencies")
             )
         )
 
-        advanceUntilIdle()
+        runCurrent()
 
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
@@ -58,9 +63,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `USDc amount change updates quote amount`() = runTest {
+    fun `USDc amount change updates quote amount`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -75,9 +80,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `quote amount change updates USDc amount`() = runTest {
+    fun `quote amount change updates USDc amount`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -92,9 +97,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `trailing decimal amount is accepted while typing`() = runTest {
+    fun `trailing decimal amount is accepted while typing`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -110,9 +115,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `leading decimal point is accepted as in progress input`() = runTest {
+    fun `leading decimal point is accepted as in progress input`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -128,9 +133,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `zero trailing decimal amount is accepted without error`() = runTest {
+    fun `zero trailing decimal amount is accepted without error`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -146,9 +151,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `letters are sanitized from amount input`() = runTest {
+    fun `letters are sanitized from amount input`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -164,9 +169,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `negative amount input is sanitized to positive digits`() = runTest {
+    fun `negative amount input is sanitized to positive digits`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -182,9 +187,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `multiple decimal separators are sanitized`() = runTest {
+    fun `multiple decimal separators are sanitized`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -200,9 +205,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `large amount input shows inline field error`() = runTest {
+    fun `large amount input shows inline field error`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -220,9 +225,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `USDc decimals are capped to six places`() = runTest {
+    fun `USDc decimals are capped to six places`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -238,9 +243,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `fiat decimals are capped to two places`() = runTest {
+    fun `fiat decimals are capped to two places`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
@@ -256,9 +261,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `swap clicked swaps top and bottom currencies`() = runTest {
+    fun `swap clicked swaps top and bottom currencies`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(ExchangeUiEvent.SwapClicked)
 
@@ -268,9 +273,9 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `currency selected updates selected currency`() = runTest {
+    fun `currency selected updates selected currency`() = runViewModelTest {
         val viewModel = viewModel()
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(ExchangeUiEvent.CurrencySelected("ARS"))
 
@@ -281,7 +286,7 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `missing selected rate shows error state`() = runTest {
+    fun `missing selected rate shows error state`() = runViewModelTest {
         val viewModel = viewModel(
             repository = FakeExchangeRepository(
                 currenciesResult = AppResult.Success(listOf(Currency("MXN"), Currency("COP"))),
@@ -293,7 +298,7 @@ class ExchangeViewModelTest {
                 )
             )
         )
-        advanceUntilIdle()
+        runCurrent()
 
         viewModel.onEvent(ExchangeUiEvent.CurrencySelected("COP"))
 
@@ -304,7 +309,7 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `cached rates result sets cached state`() = runTest {
+    fun `cached rates result sets cached state`() = runViewModelTest {
         val viewModel = viewModel(
             repository = FakeExchangeRepository(
                 ratesResult = AppResult.Success(
@@ -315,7 +320,7 @@ class ExchangeViewModelTest {
                 )
             )
         )
-        advanceUntilIdle()
+        runCurrent()
 
         val state = viewModel.uiState.value
         assertTrue(state.isUsingCachedRates)
@@ -323,17 +328,17 @@ class ExchangeViewModelTest {
     }
 
     @Test
-    fun `coming online refreshes cached rates automatically`() = runTest {
+    fun `coming online refreshes cached rates automatically`() = runViewModelTest {
         val networkMonitor = FakeNetworkMonitor()
         val viewModel = viewModel(
             repository = CachedThenFreshExchangeRepository(),
             networkMonitor = networkMonitor
         )
-        advanceUntilIdle()
+        runCurrent()
         assertTrue(viewModel.uiState.value.isUsingCachedRates)
 
         networkMonitor.emitOnline(true)
-        advanceUntilIdle()
+        runCurrent()
 
         val state = viewModel.uiState.value
         assertFalse(state.isUsingCachedRates)
@@ -343,11 +348,26 @@ class ExchangeViewModelTest {
     private fun viewModel(
         repository: ExchangeRepository = FakeExchangeRepository(),
         networkMonitor: NetworkMonitor = FakeNetworkMonitor()
-    ) = ExchangeViewModel(
-        exchangeRepository = repository,
-        convertCurrencyUseCase = ConvertCurrencyUseCase(),
-        networkMonitor = networkMonitor
-    )
+    ): ExchangeViewModel {
+        return ExchangeViewModel(
+            exchangeRepository = repository,
+            convertCurrencyUseCase = ConvertCurrencyUseCase(),
+            networkMonitor = networkMonitor
+        ).also { viewModel ->
+            createdViewModels += viewModel
+        }
+    }
+
+    private fun runViewModelTest(testBody: suspend TestScope.() -> Unit) = runTest {
+        try {
+            testBody()
+        } finally {
+            createdViewModels.forEach { viewModel ->
+                viewModel.viewModelScope.cancel()
+            }
+            createdViewModels.clear()
+        }
+    }
 
     private class FakeExchangeRepository(
         private val currenciesResult: AppResult<List<Currency>> = AppResult.Success(
