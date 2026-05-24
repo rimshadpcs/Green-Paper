@@ -2,6 +2,7 @@ package com.rimapps.arqtest.presentation.exchange.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +21,17 @@ fun ExchangeErrorBanner(
     onRetryClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val friendlyTitle = if (message.startsWith("Exchange rate unavailable")) {
+        message
+    } else {
+        "Couldn’t load exchange rates"
+    }
+    val friendlyMessage = if (message.startsWith("Exchange rate unavailable")) {
+        "Choose another currency or try refreshing."
+    } else {
+        "Check your connection and try again."
+    }
+
     Row(
         modifier = modifier
             .background(
@@ -30,12 +42,18 @@ fun ExchangeErrorBanner(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = message,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.weight(1f)
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = friendlyTitle,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                text = friendlyMessage,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
         TextButton(
             onClick = onRetryClick,
             enabled = !isRefreshing

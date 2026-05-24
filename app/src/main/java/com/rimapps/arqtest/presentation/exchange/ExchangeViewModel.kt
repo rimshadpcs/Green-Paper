@@ -159,7 +159,14 @@ class ExchangeViewModel @Inject constructor(
             return
         }
 
-        val amount = value.toValidAmountOrNull()
+        if (value.isDecimalInProgress()) {
+            _uiState.update { current ->
+                current.withAmount(field, value).copy(errorMessage = null)
+            }
+            return
+        }
+
+        val amount = value.toAmountForConversionOrNull()
         if (amount == null) {
             _uiState.update { current ->
                 when (field) {
@@ -359,14 +366,27 @@ class ExchangeViewModel @Inject constructor(
         return "Exchange rate unavailable for ${currencyCode.uppercase()}"
     }
 
-    private fun String.toValidAmountOrNull(): BigDecimal? {
+    private fun String.isDecimalInProgress(): Boolean {
+        return this == "."
+    }
+
+    private fun String.toAmountForConversionOrNull(): BigDecimal? {
         if (!matches(AMOUNT_PATTERN)) return null
-        return runCatching { BigDecimal(this) }
+
+        val normalizedValue = when {
+            startsWith(".") -> "0$this"
+            endsWith(".") -> dropLast(1)
+            else -> this
+        }
+
+        if (normalizedValue.isBlank()) return null
+
+        return runCatching { BigDecimal(normalizedValue) }
             .getOrNull()
             ?.takeIf { amount -> amount >= BigDecimal.ZERO }
     }
 
     private companion object {
-        val AMOUNT_PATTERN = Regex("""\d+(\.\d+)?|\.\d+""")
+        val AMOUNT_PATTERN = Regex("""\d+(\.\d*)?|\.\d*""")
     }
 }
