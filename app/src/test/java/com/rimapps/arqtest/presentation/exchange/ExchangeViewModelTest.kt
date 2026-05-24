@@ -1,13 +1,17 @@
 package com.rimapps.arqtest.presentation.exchange
 
 import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.domain.model.AmountInputField
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.domain.model.ExchangeRate
+import com.rimapps.arqtest.domain.model.ExchangeRatesResult
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
 import com.rimapps.arqtest.domain.usecase.ConvertCurrencyUseCase
 import java.math.BigDecimal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -281,7 +285,12 @@ class ExchangeViewModelTest {
         val viewModel = viewModel(
             repository = FakeExchangeRepository(
                 currenciesResult = AppResult.Success(listOf(Currency("MXN"), Currency("COP"))),
-                ratesResult = AppResult.Success(listOf(mxnRate()))
+                ratesResult = AppResult.Success(
+                    ExchangeRatesResult(
+                        rates = listOf(mxnRate()),
+                        isCached = false
+                    )
+                )
             )
         )
         advanceUntilIdle()
@@ -294,21 +303,63 @@ class ExchangeViewModelTest {
         assertTrue(state.errorMessage.orEmpty().contains("COP"))
     }
 
+    @Test
+    fun `cached rates result sets cached state`() = runTest {
+        val viewModel = viewModel(
+            repository = FakeExchangeRepository(
+                ratesResult = AppResult.Success(
+                    ExchangeRatesResult(
+                        rates = listOf(mxnRate(), arsRate()),
+                        isCached = true
+                    )
+                )
+            )
+        )
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state.isUsingCachedRates)
+        assertBigDecimalEquals("18.00", state.currentRate)
+    }
+
+    @Test
+    fun `coming online refreshes cached rates automatically`() = runTest {
+        val networkMonitor = FakeNetworkMonitor()
+        val viewModel = viewModel(
+            repository = CachedThenFreshExchangeRepository(),
+            networkMonitor = networkMonitor
+        )
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.isUsingCachedRates)
+
+        networkMonitor.emitOnline(true)
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertFalse(state.isUsingCachedRates)
+        assertBigDecimalEquals("20.00", state.currentRate)
+    }
+
     private fun viewModel(
-        repository: ExchangeRepository = FakeExchangeRepository()
+        repository: ExchangeRepository = FakeExchangeRepository(),
+        networkMonitor: NetworkMonitor = FakeNetworkMonitor()
     ) = ExchangeViewModel(
         exchangeRepository = repository,
-        convertCurrencyUseCase = ConvertCurrencyUseCase()
+        convertCurrencyUseCase = ConvertCurrencyUseCase(),
+        networkMonitor = networkMonitor
     )
 
     private class FakeExchangeRepository(
         private val currenciesResult: AppResult<List<Currency>> = AppResult.Success(
             listOf(Currency("MXN"), Currency("ARS"))
         ),
-        private val ratesResult: AppResult<List<ExchangeRate>> = AppResult.Success(
-            listOf(
-                mxnRate(),
-                arsRate()
+        private val ratesResult: AppResult<ExchangeRatesResult> = AppResult.Success(
+            ExchangeRatesResult(
+                rates = listOf(
+                    mxnRate(),
+                    arsRate()
+                ),
+                isCached = false
             )
         )
     ) : ExchangeRepository {
@@ -316,8 +367,53 @@ class ExchangeViewModelTest {
             return currenciesResult
         }
 
-        override suspend fun getExchangeRates(currencyCodes: List<String>): AppResult<List<ExchangeRate>> {
+        override suspend fun getExchangeRates(currencyCodes: List<String>): AppResult<ExchangeRatesResult> {
             return ratesResult
+        }
+    }
+
+    private class CachedThenFreshExchangeRepository : ExchangeRepository {
+        private var rateRequestCount = 0
+
+        override suspend fun getAvailableCurrencies(): AppResult<List<Currency>> {
+            return AppResult.Success(listOf(Currency("MXN")))
+        }
+
+        override suspend fun getExchangeRates(currencyCodes: List<String>): AppResult<ExchangeRatesResult> {
+            rateRequestCount += 1
+            return if (rateRequestCount == 1) {
+                AppResult.Success(
+                    ExchangeRatesResult(
+                        rates = listOf(mxnRate()),
+                        isCached = true
+                    )
+                )
+            } else {
+                AppResult.Success(
+                    ExchangeRatesResult(
+                        rates = listOf(
+                            ExchangeRate(
+                                baseCurrencyCode = "USDc",
+                                quoteCurrencyCode = "MXN",
+                                bid = BigDecimal("19.00"),
+                                ask = BigDecimal("21.00"),
+                                updatedAt = "2026-05-24T00:00:00Z"
+                            )
+                        ),
+                        isCached = false
+                    )
+                )
+            }
+        }
+    }
+
+    private class FakeNetworkMonitor : NetworkMonitor {
+        private val onlineEvents = MutableSharedFlow<Boolean>()
+
+        override val isOnline = onlineEvents.asSharedFlow()
+
+        suspend fun emitOnline(isOnline: Boolean) {
+            onlineEvents.emit(isOnline)
         }
     }
 
