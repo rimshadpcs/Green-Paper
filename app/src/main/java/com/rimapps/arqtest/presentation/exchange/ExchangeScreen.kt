@@ -1,5 +1,7 @@
 package com.rimapps.arqtest.presentation.exchange
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -16,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -60,9 +62,10 @@ private fun ExchangeScreenContent(
                 .padding(innerPadding)
         ) {
             if (state.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
+                ExchangeLoadingContent(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp)
                 )
             } else {
                 Column(
@@ -89,6 +92,9 @@ private fun ExchangeScreenContent(
                     RateInfoText(
                         currentRate = state.currentRate,
                         selectedCurrencyCode = state.selectedCurrencyCode,
+                        lastUpdated = state.lastUpdated,
+                        isRefreshing = state.isRefreshing,
+                        onRefreshClick = { onEvent(ExchangeUiEvent.RefreshClicked) },
                         modifier = Modifier.fillMaxWidth()
                     )
                     Spacer(modifier = Modifier.height(28.dp))
@@ -107,6 +113,7 @@ private fun ExchangeScreenContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(188.dp)
+                            .animateContentSize()
                     ) {
                         CurrencyAmountCard(
                             currencyCode = state.topCurrencyCode,
@@ -161,6 +168,52 @@ private fun ExchangeScreenContent(
             }
         }
     }
+}
+
+@Composable
+private fun ExchangeLoadingContent(
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Spacer(modifier = Modifier.height(72.dp))
+        LoadingBlock(
+            widthFraction = 0.82f,
+            height = 34.dp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        LoadingBlock(
+            widthFraction = 0.56f,
+            height = 22.dp
+        )
+        Spacer(modifier = Modifier.height(28.dp))
+        LoadingBlock(
+            widthFraction = 1f,
+            height = 88.dp
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        LoadingBlock(
+            widthFraction = 1f,
+            height = 88.dp
+        )
+    }
+}
+
+@Composable
+private fun LoadingBlock(
+    widthFraction: Float,
+    height: androidx.compose.ui.unit.Dp,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth(widthFraction)
+            .height(height)
+            .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+    )
 }
 
 @Preview(showBackground = true)

@@ -88,6 +88,42 @@ class ExchangeViewModelTest {
     }
 
     @Test
+    fun `trailing decimal amount is accepted while typing`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "12."
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals("12.", state.topAmount)
+        assertEquals("216.00", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
+    fun `leading decimal point is accepted as in progress input`() = runTest {
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.onEvent(
+            ExchangeUiEvent.AmountChanged(
+                field = AmountInputField.Top,
+                value = "."
+            )
+        )
+
+        val state = viewModel.uiState.value
+        assertEquals(".", state.topAmount)
+        assertEquals("", state.bottomAmount)
+        assertEquals(null, state.errorMessage)
+    }
+
+    @Test
     fun `swap clicked swaps top and bottom currencies`() = runTest {
         val viewModel = viewModel()
         advanceUntilIdle()
