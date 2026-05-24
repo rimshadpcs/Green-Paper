@@ -53,6 +53,8 @@ import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
 import com.rimapps.arqtest.domain.model.AmountInputField
 import com.rimapps.arqtest.presentation.exchange.flagDrawableResId
 import com.rimapps.arqtest.presentation.util.AmountVisualTransformation
+import com.rimapps.arqtest.presentation.util.maxDecimalPlacesForCurrency
+import com.rimapps.arqtest.presentation.util.sanitizeAmountInput
 
 @Composable
 fun CurrencyAmountCard(
@@ -158,18 +160,17 @@ fun CurrencyAmountCard(
             TextField(
                 value = textFieldValue,
                 onValueChange = { value ->
-                    val sanitizedAmount = value.text.sanitizeAmountInput()
-                    val selection = if (sanitizedAmount == value.text) {
-                        value.selection.end.coerceIn(0, sanitizedAmount.length)
-                    } else {
-                        sanitizedAmount.length
-                    }
+                    val sanitizedInput = sanitizeAmountInput(
+                        input = value.text,
+                        selectionEnd = value.selection.end,
+                        maxDecimalPlaces = maxDecimalPlacesForCurrency(currencyCode)
+                    )
 
                     textFieldValue = TextFieldValue(
-                        text = sanitizedAmount,
-                        selection = TextRange(selection)
+                        text = sanitizedInput.text,
+                        selection = TextRange(sanitizedInput.selection)
                     )
-                    onAmountChange(amountInputField, sanitizedAmount)
+                    onAmountChange(amountInputField, sanitizedInput.text)
                 },
                 textStyle = MaterialTheme.typography.titleLarge.copy(
                     color = MaterialTheme.colorScheme.onSurface,
@@ -226,21 +227,6 @@ private fun DownChevron(
             strokeWidth = 2.dp.toPx(),
             cap = StrokeCap.Round
         )
-    }
-}
-
-private fun String.sanitizeAmountInput(): String {
-    var hasDecimal = false
-    return buildString {
-        this@sanitizeAmountInput.forEach { char ->
-            when {
-                char.isDigit() -> append(char)
-                char == '.' && !hasDecimal -> {
-                    append(char)
-                    hasDecimal = true
-                }
-            }
-        }
     }
 }
 

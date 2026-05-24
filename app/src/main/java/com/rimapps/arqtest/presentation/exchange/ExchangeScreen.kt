@@ -121,6 +121,15 @@ private fun ExchangeScreenContent(
                             .height(188.dp)
                             .animateContentSize()
                     ) {
+                        state.topAmountError?.let { message ->
+                            AmountFieldErrorText(
+                                text = message,
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(top = 8.dp, end = 20.dp)
+                                    .zIndex(2f)
+                            )
+                        }
                         CurrencyAmountCard(
                             currencyCode = state.topCurrencyCode,
                             amount = state.topAmount,
@@ -137,6 +146,15 @@ private fun ExchangeScreenContent(
                                 .align(Alignment.TopCenter)
                         )
 
+                        state.bottomAmountError?.let { message ->
+                            AmountFieldErrorText(
+                                text = message,
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(bottom = 8.dp, end = 20.dp)
+                                    .zIndex(2f)
+                            )
+                        }
                         CurrencyAmountCard(
                             currencyCode = state.bottomCurrencyCode,
                             amount = state.bottomAmount,
@@ -238,6 +256,21 @@ private fun ExchangeLoadingContent(
             )
         }
     }
+}
+
+@Composable
+private fun AmountFieldErrorText(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Text(
+        text = text,
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+        fontSize = 12.sp,
+        maxLines = 1,
+        modifier = modifier
+    )
 }
 
 @Composable
