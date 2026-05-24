@@ -1,5 +1,11 @@
 package com.rimapps.arqtest.presentation.exchange.components
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.material3.MaterialTheme
@@ -26,15 +32,25 @@ fun RateInfoText(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            text = currentRate?.let { rate ->
+        AnimatedContent(
+            targetState = currentRate?.let { rate ->
                 "1 ${ExchangeUiState.BASE_CURRENCY} = ${rate.toRateDisplay()} $selectedCurrencyCode"
             } ?: "Rate unavailable for $selectedCurrencyCode",
-            color = MaterialTheme.colorScheme.primary,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = 20.sp
-        )
+            transitionSpec = {
+                fadeIn(tween(RATE_TEXT_ANIMATION_MS)) togetherWith
+                    fadeOut(tween(RATE_TEXT_ANIMATION_MS)) using
+                    SizeTransform(clip = false)
+            },
+            label = "rate_text_change"
+        ) { rateText ->
+            Text(
+                text = rateText,
+                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 20.sp
+            )
+        }
         Row(verticalAlignment = Alignment.CenterVertically) {
             lastUpdated.toLastUpdatedDisplay()?.let { updatedText ->
                 Text(
@@ -54,3 +70,5 @@ fun RateInfoText(
         }
     }
 }
+
+private const val RATE_TEXT_ANIMATION_MS = 360
