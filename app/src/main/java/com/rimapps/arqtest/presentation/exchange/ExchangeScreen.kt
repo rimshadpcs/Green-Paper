@@ -6,10 +6,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -21,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -35,6 +40,7 @@ import com.rimapps.arqtest.presentation.exchange.components.CurrencyPickerBottom
 import com.rimapps.arqtest.presentation.exchange.components.ExchangeErrorBanner
 import com.rimapps.arqtest.presentation.exchange.components.RateInfoText
 import com.rimapps.arqtest.presentation.exchange.components.SwapButton
+import java.math.BigDecimal
 
 @Composable
 fun ExchangeScreen(
@@ -180,45 +186,79 @@ private fun ExchangeLoadingContent(
     ) {
         Spacer(modifier = Modifier.height(72.dp))
         LoadingBlock(
-            widthFraction = 0.82f,
-            height = 34.dp
+            widthFraction = 0.92f,
+            height = 36.dp,
+            cornerRadius = 10.dp
         )
         Spacer(modifier = Modifier.height(16.dp))
         LoadingBlock(
-            widthFraction = 0.56f,
-            height = 22.dp
+            widthFraction = 0.62f,
+            height = 24.dp,
+            cornerRadius = 8.dp
         )
-        Spacer(modifier = Modifier.height(28.dp))
-        LoadingBlock(
-            widthFraction = 1f,
-            height = 88.dp
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        LoadingBlock(
-            widthFraction = 1f,
-            height = 88.dp
-        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            LoadingBlock(
+                widthFraction = 0.34f,
+                height = 16.dp,
+                cornerRadius = 8.dp
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            LoadingBlock(
+                widthFraction = 0.20f,
+                height = 28.dp,
+                cornerRadius = 14.dp
+            )
+        }
+        Spacer(modifier = Modifier.height(26.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(188.dp)
+        ) {
+            LoadingBlock(
+                widthFraction = 1f,
+                height = 88.dp,
+                cornerRadius = 22.dp,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+            LoadingBlock(
+                widthFraction = 1f,
+                height = 88.dp,
+                cornerRadius = 22.dp,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
+            Box(
+                modifier = Modifier
+                    .size(24.dp)
+                    .align(Alignment.Center)
+                    .zIndex(1f)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+            )
+        }
     }
 }
 
 @Composable
 private fun LoadingBlock(
     widthFraction: Float,
-    height: androidx.compose.ui.unit.Dp,
+    height: Dp,
+    cornerRadius: Dp,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .fillMaxWidth(widthFraction)
             .height(height)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
     )
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun ExchangeScreenPreview() {
+private fun ExchangeScreenUsdcTopPreview() {
     ArqTestTheme {
         ExchangeScreenContent(
             state = ExchangeUiState(
@@ -230,9 +270,80 @@ private fun ExchangeScreenPreview() {
                 ),
                 topAmount = "10",
                 bottomAmount = "184.097",
-                currentRate = java.math.BigDecimal("18.4097")
+                currentRate = BigDecimal("18.4097")
             ),
             onEvent = {}
         )
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+private fun ExchangeScreenQuoteTopPreview() {
+    ArqTestTheme {
+        ExchangeScreenContent(
+            state = ExchangeUiState(
+                availableCurrencies = previewCurrencies,
+                selectedCurrencyCode = "COP",
+                topCurrencyCode = "COP",
+                bottomCurrencyCode = ExchangeUiState.BASE_CURRENCY,
+                topAmount = "3890.83",
+                bottomAmount = "1",
+                currentRate = BigDecimal("3890.83")
+            ),
+            onEvent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExchangeScreenLoadingPreview() {
+    ArqTestTheme {
+        ExchangeScreenContent(
+            state = ExchangeUiState(isLoading = true),
+            onEvent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExchangeScreenErrorPreview() {
+    ArqTestTheme {
+        ExchangeScreenContent(
+            state = ExchangeUiState(
+                availableCurrencies = previewCurrencies,
+                topAmount = "15",
+                bottomAmount = "",
+                currentRate = null,
+                errorMessage = "Couldn’t load exchange rates"
+            ),
+            onEvent = {}
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExchangeScreenBottomSheetPreview() {
+    ArqTestTheme {
+        ExchangeScreenContent(
+            state = ExchangeUiState(
+                availableCurrencies = previewCurrencies,
+                topAmount = "10",
+                bottomAmount = "184.097",
+                currentRate = BigDecimal("18.4097"),
+                isCurrencyPickerVisible = true
+            ),
+            onEvent = {}
+        )
+    }
+}
+
+private val previewCurrencies = listOf(
+    Currency(code = "MXN"),
+    Currency(code = "ARS"),
+    Currency(code = "BRL"),
+    Currency(code = "COP")
+)

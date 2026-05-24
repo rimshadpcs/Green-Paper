@@ -15,16 +15,24 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.presentation.exchange.toUiModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,7 +42,18 @@ fun CurrencyPickerBottomSheet(
     onCurrencySelected: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val sheetState = rememberModalBottomSheetState()
+    val coroutineScope = rememberCoroutineScope()
+
+    fun dismissWithAnimation() {
+        coroutineScope.launch {
+            sheetState.hide()
+            onDismiss()
+        }
+    }
+
     ModalBottomSheet(
+        sheetState = sheetState,
         onDismissRequest = onDismiss,
         containerColor = MaterialTheme.colorScheme.background
     ) {
@@ -56,7 +75,10 @@ fun CurrencyPickerBottomSheet(
                     modifier = Modifier.weight(1f),
                     fontWeight = FontWeight.ExtraBold
                 )
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = ::dismissWithAnimation,
+                    modifier = Modifier.semantics { contentDescription = "Close currency picker" }
+                ) {
                     CloseIcon(modifier = Modifier.size(14.dp))
                 }
             }
@@ -75,11 +97,38 @@ fun CurrencyPickerBottomSheet(
                         CurrencyListItem(
                             currency = currency,
                             isSelected = currency.code.equals(selectedCurrencyCode, ignoreCase = true),
-                            onClick = { onCurrencySelected(currency.code) }
+                            onClick = {
+                                onCurrencySelected(currency.code)
+                                coroutineScope.launch {
+                                    delay(SELECTION_FEEDBACK_DELAY_MS)
+                                    sheetState.hide()
+                                    onDismiss()
+                                }
+                            }
                         )
                     }
             }
         }
+    }
+}
+
+private const val SELECTION_FEEDBACK_DELAY_MS = 160L
+
+@Preview(showBackground = true)
+@Composable
+private fun CurrencyPickerBottomSheetPreview() {
+    ArqTestTheme {
+        CurrencyPickerBottomSheet(
+            currencies = listOf(
+                Currency(code = "ARS"),
+                Currency(code = "COP"),
+                Currency(code = "MXN"),
+                Currency(code = "BRL")
+            ),
+            selectedCurrencyCode = "MXN",
+            onCurrencySelected = {},
+            onDismiss = {}
+        )
     }
 }
 

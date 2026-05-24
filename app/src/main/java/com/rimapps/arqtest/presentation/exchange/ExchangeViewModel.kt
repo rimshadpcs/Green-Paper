@@ -212,8 +212,6 @@ class ExchangeViewModel @Inject constructor(
                 } else {
                     normalizedCode
                 },
-                isCurrencyPickerVisible = false,
-                currencySearchQuery = "",
                 errorMessage = null
             )
         }
