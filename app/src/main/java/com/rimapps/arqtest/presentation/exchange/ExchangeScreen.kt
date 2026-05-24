@@ -18,7 +18,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,9 +42,12 @@ import com.rimapps.arqtest.presentation.exchange.components.CurrencyAmountCard
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyCardCutout
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyPickerBottomSheet
 import com.rimapps.arqtest.presentation.exchange.components.ExchangeErrorBanner
+import com.rimapps.arqtest.presentation.exchange.components.PLACEHOLDER_SHIMMER_MS
+import com.rimapps.arqtest.presentation.exchange.components.RateInfoChip
 import com.rimapps.arqtest.presentation.exchange.components.RateInfoText
 import com.rimapps.arqtest.presentation.exchange.components.SwapButton
 import java.math.BigDecimal
+import kotlinx.coroutines.delay
 
 @Composable
 fun ExchangeScreen(
@@ -59,6 +66,101 @@ private fun ExchangeScreenContent(
     state: ExchangeUiState,
     onEvent: (ExchangeUiEvent) -> Unit
 ) {
+    var heldCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
+    var shimmeringCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
+    var revealingCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
+    var previousTopCurrencyCode by remember { mutableStateOf(state.topCurrencyCode) }
+    var previousBottomCurrencyCode by remember { mutableStateOf(state.bottomCurrencyCode) }
+    var skipAmountFeedbackOnce by remember { mutableStateOf(false) }
+
+    fun handleAmountChange(
+        field: AmountInputField,
+        value: String
+    ) {
+        if (value.isNotEmpty()) {
+            heldCalculatedField = field.opposite()
+            shimmeringCalculatedField = null
+            revealingCalculatedField = null
+        } else {
+            heldCalculatedField = null
+            shimmeringCalculatedField = null
+            revealingCalculatedField = null
+        }
+        onEvent(ExchangeUiEvent.AmountChanged(field, value))
+    }
+
+    fun handleSwapClick() {
+        skipAmountFeedbackOnce = true
+        heldCalculatedField = null
+        shimmeringCalculatedField = null
+        revealingCalculatedField = null
+        onEvent(ExchangeUiEvent.SwapClicked)
+    }
+
+    LaunchedEffect(
+        state.topAmount,
+        state.bottomAmount,
+        state.activeAmountField,
+        state.topAmountError,
+        state.bottomAmountError
+    ) {
+        if (skipAmountFeedbackOnce) {
+            skipAmountFeedbackOnce = false
+            heldCalculatedField = null
+            shimmeringCalculatedField = null
+            revealingCalculatedField = null
+            return@LaunchedEffect
+        }
+
+        val activeAmount = when (state.activeAmountField) {
+            AmountInputField.Top -> state.topAmount
+            AmountInputField.Bottom -> state.bottomAmount
+        }
+        val hasActiveError = when (state.activeAmountField) {
+            AmountInputField.Top -> state.topAmountError != null
+            AmountInputField.Bottom -> state.bottomAmountError != null
+        }
+
+        val calculatedField = if (activeAmount.isNotEmpty() && !hasActiveError) {
+            state.activeAmountField.opposite()
+        } else {
+            null
+        }
+
+        if (calculatedField == null) {
+            heldCalculatedField = null
+            shimmeringCalculatedField = null
+            revealingCalculatedField = null
+            return@LaunchedEffect
+        }
+
+        delay(CALCULATED_AMOUNT_TYPING_IDLE_MS)
+        heldCalculatedField = null
+        shimmeringCalculatedField = calculatedField
+        delay(CALCULATED_AMOUNT_SHIMMER_MS)
+        if (shimmeringCalculatedField == calculatedField) {
+            shimmeringCalculatedField = null
+            revealingCalculatedField = calculatedField
+            delay(CALCULATED_AMOUNT_REVEAL_MS)
+            if (revealingCalculatedField == calculatedField) {
+                revealingCalculatedField = null
+            }
+        }
+    }
+
+    LaunchedEffect(state.topCurrencyCode, state.bottomCurrencyCode) {
+        val didSwap = state.topCurrencyCode == previousBottomCurrencyCode &&
+            state.bottomCurrencyCode == previousTopCurrencyCode
+        previousTopCurrencyCode = state.topCurrencyCode
+        previousBottomCurrencyCode = state.bottomCurrencyCode
+        if (didSwap) {
+            skipAmountFeedbackOnce = true
+            heldCalculatedField = null
+            shimmeringCalculatedField = null
+            revealingCalculatedField = null
+        }
+    }
+
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -80,7 +182,17 @@ private fun ExchangeScreenContent(
                         .padding(horizontal = 20.dp),
                     verticalArrangement = Arrangement.Top
                 ) {
-                    Spacer(modifier = Modifier.height(72.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        RateInfoChip(
+                            lastUpdated = state.lastUpdated,
+                            isUsingCachedRates = state.isUsingCachedRates
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(52.dp))
                     Text(
                         text = "Exchange calculator",
                         color = MaterialTheme.colorScheme.onBackground,
@@ -103,10 +215,6 @@ private fun ExchangeScreenContent(
                         onRefreshClick = { onEvent(ExchangeUiEvent.RefreshClicked) },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    if (state.isUsingCachedRates) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CachedRatesBanner(modifier = Modifier.fillMaxWidth())
-                    }
                     Spacer(modifier = Modifier.height(28.dp))
 
                     state.errorMessage?.let { message ->
@@ -136,14 +244,27 @@ private fun ExchangeScreenContent(
                         }
                         CurrencyAmountCard(
                             currencyCode = state.topCurrencyCode,
-                            amount = state.topAmount,
+                            amount = amountDisplayValue(
+                                amount = state.topAmount,
+                                field = AmountInputField.Top,
+                                heldCalculatedField = heldCalculatedField,
+                                shimmeringCalculatedField = shimmeringCalculatedField
+                            ),
                             amountInputField = AmountInputField.Top,
                             isCurrencySelectable = state.topCurrencyCode != ExchangeUiState.BASE_CURRENCY,
                             cutout = CurrencyCardCutout.Bottom,
                             autoFocus = true,
+                            isAmountPlaceholder = isAmountPlaceholder(
+                                amount = state.topAmount,
+                                field = AmountInputField.Top,
+                                heldCalculatedField = heldCalculatedField,
+                                shimmeringCalculatedField = shimmeringCalculatedField
+                            ),
+                            isAmountShimmering = shimmeringCalculatedField == AmountInputField.Top,
+                            isAmountRevealing = revealingCalculatedField == AmountInputField.Top,
                             onCurrencyClick = { onEvent(ExchangeUiEvent.CurrencyPickerOpened) },
                             onAmountChange = { field, value ->
-                                onEvent(ExchangeUiEvent.AmountChanged(field, value))
+                                handleAmountChange(field, value)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -161,13 +282,26 @@ private fun ExchangeScreenContent(
                         }
                         CurrencyAmountCard(
                             currencyCode = state.bottomCurrencyCode,
-                            amount = state.bottomAmount,
+                            amount = amountDisplayValue(
+                                amount = state.bottomAmount,
+                                field = AmountInputField.Bottom,
+                                heldCalculatedField = heldCalculatedField,
+                                shimmeringCalculatedField = shimmeringCalculatedField
+                            ),
                             amountInputField = AmountInputField.Bottom,
                             isCurrencySelectable = state.bottomCurrencyCode != ExchangeUiState.BASE_CURRENCY,
                             cutout = CurrencyCardCutout.Top,
+                            isAmountPlaceholder = isAmountPlaceholder(
+                                amount = state.bottomAmount,
+                                field = AmountInputField.Bottom,
+                                heldCalculatedField = heldCalculatedField,
+                                shimmeringCalculatedField = shimmeringCalculatedField
+                            ),
+                            isAmountShimmering = shimmeringCalculatedField == AmountInputField.Bottom,
+                            isAmountRevealing = revealingCalculatedField == AmountInputField.Bottom,
                             onCurrencyClick = { onEvent(ExchangeUiEvent.CurrencyPickerOpened) },
                             onAmountChange = { field, value ->
-                                onEvent(ExchangeUiEvent.AmountChanged(field, value))
+                                handleAmountChange(field, value)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -175,7 +309,7 @@ private fun ExchangeScreenContent(
                         )
 
                         SwapButton(
-                            onClick = { onEvent(ExchangeUiEvent.SwapClicked) },
+                            onClick = ::handleSwapClick,
                             modifier = Modifier
                                 .align(Alignment.Center)
                                 .zIndex(1f)
@@ -198,21 +332,38 @@ private fun ExchangeScreenContent(
     }
 }
 
-@Composable
-private fun CachedRatesBanner(
-    modifier: Modifier = Modifier
-) {
-    Text(
-        text = "Showing cached rates. Go online to refresh.",
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodySmall,
-        fontSize = 12.sp,
-        modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f))
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-    )
+private fun AmountInputField.opposite(): AmountInputField {
+    return when (this) {
+        AmountInputField.Top -> AmountInputField.Bottom
+        AmountInputField.Bottom -> AmountInputField.Top
+    }
 }
+
+private fun amountDisplayValue(
+    amount: String,
+    field: AmountInputField,
+    heldCalculatedField: AmountInputField?,
+    shimmeringCalculatedField: AmountInputField?
+): String {
+    return if (field == heldCalculatedField || field == shimmeringCalculatedField) {
+        ""
+    } else {
+        amount
+    }
+}
+
+private fun isAmountPlaceholder(
+    amount: String,
+    field: AmountInputField,
+    heldCalculatedField: AmountInputField?,
+    shimmeringCalculatedField: AmountInputField?
+): Boolean {
+    return amount.isEmpty() || field == heldCalculatedField || field == shimmeringCalculatedField
+}
+
+private const val CALCULATED_AMOUNT_TYPING_IDLE_MS = 650L
+private const val CALCULATED_AMOUNT_SHIMMER_MS = PLACEHOLDER_SHIMMER_MS * 3L
+private const val CALCULATED_AMOUNT_REVEAL_MS = 360L
 
 @Composable
 private fun ExchangeLoadingContent(

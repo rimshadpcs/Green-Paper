@@ -21,6 +21,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -33,9 +35,11 @@ class ExchangeViewModel @Inject constructor(
     val uiState: StateFlow<ExchangeUiState> = _uiState.asStateFlow()
 
     private var lastEditedField: AmountInputField = AmountInputField.Top
+    private var exchangeDataJob: Job? = null
 
     init {
         observeNetworkChanges()
+        observeRateUpdates()
         loadExchangeData(isRefresh = false)
     }
 
@@ -63,11 +67,16 @@ class ExchangeViewModel @Inject constructor(
         }
     }
 
-    private fun loadExchangeData(isRefresh: Boolean) {
-        viewModelScope.launch {
+    private fun loadExchangeData(
+        isRefresh: Boolean,
+        showLoading: Boolean = true
+    ) {
+        if (exchangeDataJob?.isActive == true) return
+
+        exchangeDataJob = viewModelScope.launch {
             _uiState.update { state ->
                 state.copy(
-                    isLoading = !isRefresh,
+                    isLoading = showLoading && !isRefresh,
                     isRefreshing = isRefresh,
                     errorMessage = null
                 )
@@ -114,6 +123,18 @@ class ExchangeViewModel @Inject constructor(
                 currencyCodes = availableCurrencies.map { currency -> currency.code },
                 selectedCurrencyCode = selectedCurrencyCode
             )
+        }
+    }
+
+    private fun observeRateUpdates() {
+        viewModelScope.launch {
+            while (true) {
+                delay(RATE_REFRESH_INTERVAL_MS)
+                val state = uiState.value
+                if (!state.isLoading && !state.isRefreshing) {
+                    loadExchangeData(isRefresh = false, showLoading = false)
+                }
+            }
         }
     }
 
@@ -170,6 +191,7 @@ class ExchangeViewModel @Inject constructor(
         value: String
     ) {
         lastEditedField = field
+        _uiState.update { state -> state.copy(activeAmountField = field) }
         val state = uiState.value
         val validationResult = sanitizeAmountInput(
             input = value,
@@ -294,6 +316,7 @@ class ExchangeViewModel @Inject constructor(
             AmountInputField.Top -> AmountInputField.Bottom
             AmountInputField.Bottom -> AmountInputField.Top
         }
+        _uiState.update { state -> state.copy(activeAmountField = lastEditedField) }
     }
 
     private fun recalculateFromLastEditedField() {
@@ -376,8 +399,8 @@ class ExchangeViewModel @Inject constructor(
     ): String {
         val normalizedCodes = availableCurrencyCodes.map { code -> code.uppercase() }
         return when {
-            ExchangeUiState.DEFAULT_QUOTE_CURRENCY in normalizedCodes -> ExchangeUiState.DEFAULT_QUOTE_CURRENCY
             currentCurrencyCode.uppercase() in normalizedCodes -> currentCurrencyCode.uppercase()
+            ExchangeUiState.DEFAULT_QUOTE_CURRENCY in normalizedCodes -> ExchangeUiState.DEFAULT_QUOTE_CURRENCY
             normalizedCodes.isNotEmpty() -> normalizedCodes.first()
             else -> ExchangeUiState.DEFAULT_QUOTE_CURRENCY
         }
@@ -485,5 +508,6 @@ class ExchangeViewModel @Inject constructor(
     private companion object {
         val AMOUNT_PATTERN = Regex("""\d+(\.\d*)?|\.\d*""")
         const val AMOUNT_TOO_LARGE_MESSAGE = "Amount is too large"
+        const val RATE_REFRESH_INTERVAL_MS = 30_000L
     }
 }
