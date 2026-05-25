@@ -6,6 +6,7 @@ import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
+import com.rimapps.arqtest.domain.repository.SelectedCurrencyRepository
 import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -22,7 +23,8 @@ import kotlinx.coroutines.launch
 class ExchangeViewModel @Inject constructor(
     private val exchangeRepository: ExchangeRepository,
     private val amountProcessor: ExchangeAmountProcessor,
-    private val networkMonitor: NetworkMonitor
+    private val networkMonitor: NetworkMonitor,
+    private val selectedCurrencyRepository: SelectedCurrencyRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ExchangeUiState(isLoading = true))
     val uiState: StateFlow<ExchangeUiState> = _uiState.asStateFlow()
@@ -91,21 +93,22 @@ class ExchangeViewModel @Inject constructor(
                 }
             }
 
+            val preferredSelection = preferredSelection()
             val selectedCurrencyCode = selectCurrencyCode(
                 availableCurrencyCodes = availableCurrencies.map { currency -> currency.code },
-                currentCurrencyCode = _uiState.value.selectedCurrencyCode
+                preferredCurrencyCode = preferredSelection.currencyCode
             )
 
             _uiState.update { state ->
                 state.copy(
                     availableCurrencies = availableCurrencies.map { currency -> currency.toUiModel() },
                     selectedCurrencyCode = selectedCurrencyCode,
-                    bottomCurrencyCode = if (state.topCurrencyCode == ExchangeUiState.BASE_CURRENCY) {
+                    topCurrencyCode = if (preferredSelection.isQuoteCurrencyFirst) {
                         selectedCurrencyCode
                     } else {
                         ExchangeUiState.BASE_CURRENCY
                     },
-                    topCurrencyCode = if (state.topCurrencyCode == ExchangeUiState.BASE_CURRENCY) {
+                    bottomCurrencyCode = if (preferredSelection.isQuoteCurrencyFirst) {
                         ExchangeUiState.BASE_CURRENCY
                     } else {
                         selectedCurrencyCode
@@ -217,6 +220,7 @@ class ExchangeViewModel @Inject constructor(
         }
         updateSelectedRateState()
         recalculateFromLastEditedField()
+        saveSelectedCurrencyCode(normalizedCode)
     }
 
     private fun onSwapClicked() {
@@ -234,6 +238,7 @@ class ExchangeViewModel @Inject constructor(
             ExchangeAmountField.Bottom -> ExchangeAmountField.Top
         }
         _uiState.update { state -> state.copy(activeAmountField = lastEditedField) }
+        saveSelectedQuoteCurrencyPosition(isQuoteCurrencyFirst = _uiState.value.topCurrencyCode != ExchangeUiState.BASE_CURRENCY)
     }
 
     private fun recalculateFromLastEditedField() {
@@ -259,18 +264,57 @@ class ExchangeViewModel @Inject constructor(
         }
     }
 
+    private suspend fun preferredSelection(): PreferredSelection {
+        val currentState = _uiState.value
+        val currentCurrencyCode = currentState.selectedCurrencyCode
+        val currentIsQuoteCurrencyFirst = currentState.topCurrencyCode != ExchangeUiState.BASE_CURRENCY
+        return if (_uiState.value.availableCurrencies.isEmpty() &&
+            currentCurrencyCode == ExchangeUiState.DEFAULT_QUOTE_CURRENCY
+        ) {
+            PreferredSelection(
+                currencyCode = selectedCurrencyRepository.getSelectedCurrencyCode() ?: currentCurrencyCode,
+                isQuoteCurrencyFirst = selectedCurrencyRepository.getSelectedQuoteCurrencyIsFirst()
+                    ?: currentIsQuoteCurrencyFirst
+            )
+        } else {
+            PreferredSelection(
+                currencyCode = currentCurrencyCode,
+                isQuoteCurrencyFirst = currentIsQuoteCurrencyFirst
+            )
+        }
+    }
+
     private fun selectCurrencyCode(
         availableCurrencyCodes: List<String>,
-        currentCurrencyCode: String
+        preferredCurrencyCode: String
     ): String {
         val normalizedCodes = availableCurrencyCodes.map { code -> code.uppercase() }
         return when {
-            currentCurrencyCode.uppercase() in normalizedCodes -> currentCurrencyCode.uppercase()
+            preferredCurrencyCode.uppercase() in normalizedCodes -> preferredCurrencyCode.uppercase()
             ExchangeUiState.DEFAULT_QUOTE_CURRENCY in normalizedCodes -> ExchangeUiState.DEFAULT_QUOTE_CURRENCY
             normalizedCodes.isNotEmpty() -> normalizedCodes.first()
             else -> ExchangeUiState.DEFAULT_QUOTE_CURRENCY
         }
     }
+
+    private fun saveSelectedCurrencyCode(currencyCode: String) {
+        if (currencyCode.equals(ExchangeUiState.BASE_CURRENCY, ignoreCase = true)) return
+
+        viewModelScope.launch {
+            selectedCurrencyRepository.saveSelectedCurrencyCode(currencyCode)
+        }
+    }
+
+    private fun saveSelectedQuoteCurrencyPosition(isQuoteCurrencyFirst: Boolean) {
+        viewModelScope.launch {
+            selectedCurrencyRepository.saveSelectedQuoteCurrencyIsFirst(isQuoteCurrencyFirst)
+        }
+    }
+
+    private data class PreferredSelection(
+        val currencyCode: String,
+        val isQuoteCurrencyFirst: Boolean
+    )
 
     private companion object {
         const val RATE_REFRESH_INTERVAL_MS = 30_000L

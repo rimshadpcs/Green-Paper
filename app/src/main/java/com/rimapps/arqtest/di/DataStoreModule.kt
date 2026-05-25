@@ -6,7 +6,9 @@ import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStoreFile
 import com.rimapps.arqtest.data.local.DataStoreExchangeRateCacheDataSource
+import com.rimapps.arqtest.data.local.DataStoreSelectedCurrencyRepository
 import com.rimapps.arqtest.data.local.ExchangeRateCacheDataSource
+import com.rimapps.arqtest.domain.repository.SelectedCurrencyRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -46,6 +48,14 @@ object DataStoreModule {
             dataStore = dataStore,
             json = json
         )
+    }
+
+    @Provides
+    @Singleton
+    fun provideSelectedCurrencyRepository(
+        dataStore: DataStore<Preferences>
+    ): SelectedCurrencyRepository {
+        return DataStoreSelectedCurrencyRepository(dataStore = dataStore)
     }
 
     private const val DATA_STORE_NAME = "exchange_preferences"
