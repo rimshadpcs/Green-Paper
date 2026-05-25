@@ -351,7 +351,7 @@ class ExchangeViewModelTest {
     ): ExchangeViewModel {
         return ExchangeViewModel(
             exchangeRepository = repository,
-            convertCurrencyUseCase = ConvertCurrencyUseCase(),
+            amountProcessor = ExchangeAmountProcessor(ConvertCurrencyUseCase()),
             networkMonitor = networkMonitor
         ).also { viewModel ->
             createdViewModels += viewModel

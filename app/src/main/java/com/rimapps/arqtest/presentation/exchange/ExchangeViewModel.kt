@@ -5,30 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.rimapps.arqtest.core.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.domain.model.AmountInputField
-import com.rimapps.arqtest.domain.model.ConversionDirection
-import com.rimapps.arqtest.domain.model.CurrencyAmount
-import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
-import com.rimapps.arqtest.domain.usecase.ConvertCurrencyUseCase
-import com.rimapps.arqtest.presentation.util.maxDecimalPlacesForCurrency
-import com.rimapps.arqtest.presentation.util.sanitizeAmountInput
-import com.rimapps.arqtest.presentation.util.toInputAmountString
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.math.BigDecimal
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class ExchangeViewModel @Inject constructor(
     private val exchangeRepository: ExchangeRepository,
-    private val convertCurrencyUseCase: ConvertCurrencyUseCase,
+    private val amountProcessor: ExchangeAmountProcessor,
     private val networkMonitor: NetworkMonitor
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ExchangeUiState(isLoading = true))
@@ -191,91 +183,13 @@ class ExchangeViewModel @Inject constructor(
         value: String
     ) {
         lastEditedField = field
-        _uiState.update { state -> state.copy(activeAmountField = field) }
-        val state = uiState.value
-        val validationResult = sanitizeAmountInput(
-            input = value,
-            maxDecimalPlaces = maxDecimalPlacesForCurrency(state.currencyCodeFor(field))
-        )
-        val sanitizedValue = validationResult.text
-
-        if (sanitizedValue.isEmpty()) {
-            _uiState.update { current ->
-                when (field) {
-                    AmountInputField.Top -> current.copy(
-                        topAmount = "",
-                        bottomAmount = "",
-                        topAmountError = null,
-                        bottomAmountError = null,
-                        errorMessage = null
-                    )
-                    AmountInputField.Bottom -> current.copy(
-                        topAmount = "",
-                        bottomAmount = "",
-                        topAmountError = null,
-                        bottomAmountError = null,
-                        errorMessage = null
-                    )
-                }
-            }
-            return
+        _uiState.update { state ->
+            amountProcessor.processAmountChange(
+                state = state.copy(activeAmountField = field),
+                field = field,
+                rawValue = value
+            )
         }
-
-        if (validationResult.isTooLarge) {
-            _uiState.update { current ->
-                current.withAmount(field, sanitizedValue)
-                    .withClearedConvertedAmount(field)
-                    .withAmountError(field, AMOUNT_TOO_LARGE_MESSAGE)
-                    .copy(errorMessage = null)
-            }
-            return
-        }
-
-        if (sanitizedValue.isDecimalInProgress()) {
-            _uiState.update { current ->
-                current.withAmount(field, sanitizedValue)
-                    .withClearedConvertedAmount(field)
-                    .withClearedAmountErrors()
-                    .copy(errorMessage = null)
-            }
-            return
-        }
-
-        val amount = sanitizedValue.toAmountForConversionOrNull()
-        if (amount == null) {
-            _uiState.update { current ->
-                when (field) {
-                    AmountInputField.Top -> current.copy(
-                        topAmount = sanitizedValue,
-                        topAmountError = "Enter a valid amount"
-                    )
-                    AmountInputField.Bottom -> current.copy(
-                        bottomAmount = sanitizedValue,
-                        bottomAmountError = "Enter a valid amount"
-                    )
-                }
-            }
-            return
-        }
-
-        val selectedRate = state.exchangeRates.rateFor(state.selectedCurrencyCode)
-        if (selectedRate == null) {
-            _uiState.update { current ->
-                current.withAmount(field, sanitizedValue).copy(
-                    topAmountError = null,
-                    bottomAmountError = null,
-                    errorMessage = buildMissingRateMessage(state.selectedCurrencyCode)
-                )
-            }
-            return
-        }
-
-        convertAmount(
-            field = field,
-            value = sanitizedValue,
-            amount = amount,
-            exchangeRate = selectedRate
-        )
     }
 
     private fun onCurrencySelected(currencyCode: String) {
@@ -331,57 +245,6 @@ class ExchangeViewModel @Inject constructor(
         }
     }
 
-    private fun convertAmount(
-        field: AmountInputField,
-        value: String,
-        amount: BigDecimal,
-        exchangeRate: ExchangeRate
-    ) {
-        val state = uiState.value
-        val inputCurrencyCode = state.currencyCodeFor(field)
-        val direction = if (inputCurrencyCode == ExchangeUiState.BASE_CURRENCY) {
-            ConversionDirection.UsdcToQuote
-        } else {
-            ConversionDirection.QuoteToUsdc
-        }
-
-        when (
-            val result = convertCurrencyUseCase(
-                input = CurrencyAmount(
-                    currencyCode = inputCurrencyCode,
-                    amount = amount
-                ),
-                exchangeRate = exchangeRate,
-                direction = direction
-            )
-        ) {
-            is AppResult.Success -> {
-                _uiState.update { current ->
-                    current.withConvertedAmount(
-                        editedField = field,
-                        editedValue = value,
-                        convertedValue = result.data.convertedAmount.toInputAmountString(
-                            currencyCode = current.convertedCurrencyCodeFor(field)
-                        )
-                    ).copy(
-                        currentRate = result.data.rateUsed,
-                        lastUpdated = exchangeRate.updatedAt,
-                        topAmountError = null,
-                        bottomAmountError = null,
-                        errorMessage = null
-                    )
-                }
-            }
-            is AppResult.Error -> {
-                _uiState.update { current ->
-                    current.withAmount(field, value)
-                        .withAmountError(field, result.message)
-                        .copy(errorMessage = null)
-                }
-            }
-        }
-    }
-
     private fun updateSelectedRateState() {
         _uiState.update { state ->
             val selectedRate = state.exchangeRates.rateFor(state.selectedCurrencyCode)
@@ -406,108 +269,7 @@ class ExchangeViewModel @Inject constructor(
         }
     }
 
-    private fun ExchangeUiState.currencyCodeFor(field: AmountInputField): String {
-        return when (field) {
-            AmountInputField.Top -> topCurrencyCode
-            AmountInputField.Bottom -> bottomCurrencyCode
-        }
-    }
-
-    private fun ExchangeUiState.convertedCurrencyCodeFor(field: AmountInputField): String {
-        return when (field) {
-            AmountInputField.Top -> bottomCurrencyCode
-            AmountInputField.Bottom -> topCurrencyCode
-        }
-    }
-
-    private fun ExchangeUiState.withAmount(
-        field: AmountInputField,
-        value: String
-    ): ExchangeUiState {
-        return when (field) {
-            AmountInputField.Top -> copy(topAmount = value)
-            AmountInputField.Bottom -> copy(bottomAmount = value)
-        }
-    }
-
-    private fun ExchangeUiState.withConvertedAmount(
-        editedField: AmountInputField,
-        editedValue: String,
-        convertedValue: String
-    ): ExchangeUiState {
-        return when (editedField) {
-            AmountInputField.Top -> copy(
-                topAmount = editedValue,
-                bottomAmount = convertedValue
-            )
-            AmountInputField.Bottom -> copy(
-                topAmount = convertedValue,
-                bottomAmount = editedValue
-            )
-        }
-    }
-
-    private fun ExchangeUiState.withClearedConvertedAmount(field: AmountInputField): ExchangeUiState {
-        return when (field) {
-            AmountInputField.Top -> copy(bottomAmount = "")
-            AmountInputField.Bottom -> copy(topAmount = "")
-        }
-    }
-
-    private fun ExchangeUiState.withAmountError(
-        field: AmountInputField,
-        message: String?
-    ): ExchangeUiState {
-        return when (field) {
-            AmountInputField.Top -> copy(topAmountError = message, bottomAmountError = null)
-            AmountInputField.Bottom -> copy(topAmountError = null, bottomAmountError = message)
-        }
-    }
-
-    private fun ExchangeUiState.withClearedAmountErrors(): ExchangeUiState {
-        return copy(
-            topAmountError = null,
-            bottomAmountError = null
-        )
-    }
-
-    private fun List<ExchangeRate>.rateFor(currencyCode: String): ExchangeRate? {
-        return firstOrNull { rate ->
-            rate.quoteCurrencyCode.equals(currencyCode, ignoreCase = true)
-        }
-    }
-
-    private fun ExchangeRate?.missingRateMessage(currencyCode: String): String? {
-        return if (this == null) buildMissingRateMessage(currencyCode) else null
-    }
-
-    private fun buildMissingRateMessage(currencyCode: String): String {
-        return "Exchange rate unavailable for ${currencyCode.uppercase()}"
-    }
-
-    private fun String.isDecimalInProgress(): Boolean {
-        return this == "."
-    }
-
-    private fun String.toAmountForConversionOrNull(): BigDecimal? {
-        if (!matches(AMOUNT_PATTERN)) return null
-
-        val normalizedValue = when {
-            startsWith(".") -> "0$this"
-            endsWith(".") -> dropLast(1)
-            else -> this
-        }
-
-        if (normalizedValue.isBlank()) return null
-
-        return runCatching { BigDecimal(normalizedValue) }
-            .getOrNull()
-            ?.takeIf { amount -> amount >= BigDecimal.ZERO }
-    }
-
     private companion object {
-        val AMOUNT_PATTERN = Regex("""\d+(\.\d*)?|\.\d*""")
-        const val AMOUNT_TOO_LARGE_MESSAGE = "Amount is too large"
         const val RATE_REFRESH_INTERVAL_MS = 30_000L
     }
 }
