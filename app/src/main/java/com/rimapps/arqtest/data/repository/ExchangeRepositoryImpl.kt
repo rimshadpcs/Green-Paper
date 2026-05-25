@@ -2,26 +2,28 @@ package com.rimapps.arqtest.data.repository
 
 import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.data.local.ExchangeRateCacheDataSource
+import com.rimapps.arqtest.data.mapper.toCurrencyOrNull
 import com.rimapps.arqtest.data.mapper.toDomain
-import com.rimapps.arqtest.data.remote.DollarApi
+import com.rimapps.arqtest.data.remote.ExchangeRemoteDataSource
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.domain.model.ExchangeRatesResult
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
 import javax.inject.Inject
 
 class ExchangeRepositoryImpl @Inject constructor(
-    private val api: DollarApi,
-    private val cacheDataSource: ExchangeRateCacheDataSource
+    private val remoteDataSource: ExchangeRemoteDataSource,
+    private val cacheDataSource: ExchangeRateCacheDataSource,
+    private val fallbackCurrencyProvider: FallbackCurrencyProvider
 ) : ExchangeRepository {
     override suspend fun getAvailableCurrencies(): AppResult<List<Currency>> {
         return try {
-            val currencies = api.getTickerCurrencies()
+            val currencies = remoteDataSource.getTickerCurrencies()
                 .mapNotNull { code -> code.toCurrencyOrNull() }
-                .ifEmpty { fallbackCurrencies }
+                .ifEmpty { fallbackCurrencyProvider.currencies() }
 
             AppResult.Success(currencies)
         } catch (exception: Exception) {
-            AppResult.Success(fallbackCurrencies)
+            AppResult.Success(fallbackCurrencyProvider.currencies())
         }
     }
 
@@ -42,7 +44,7 @@ class ExchangeRepositoryImpl @Inject constructor(
                 )
             }
 
-            val rates = api.getTickers(currencies).map { ticker -> ticker.toDomain() }
+            val rates = remoteDataSource.getTickers(currencies).map { ticker -> ticker.toDomain() }
             runCatching {
                 cacheDataSource.saveRates(rates)
             }
@@ -69,21 +71,5 @@ class ExchangeRepositoryImpl @Inject constructor(
                 cause = exception
             )
         }
-    }
-
-    private fun String.toCurrencyOrNull(): Currency? {
-        val normalizedCode = trim().uppercase()
-        return normalizedCode
-            .takeIf { it.isNotBlank() }
-            ?.let { code -> Currency(code = code) }
-    }
-
-    private companion object {
-        val fallbackCurrencies = listOf(
-            Currency(code = "MXN"),
-            Currency(code = "ARS"),
-            Currency(code = "BRL"),
-            Currency(code = "COP")
-        )
     }
 }
