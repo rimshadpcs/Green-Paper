@@ -2,7 +2,7 @@ package com.rimapps.arqtest.data.repository
 
 import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.data.local.ExchangeRateCacheDataSource
-import com.rimapps.arqtest.data.remote.DollarApi
+import com.rimapps.arqtest.data.remote.ExchangeRemoteDataSource
 import com.rimapps.arqtest.data.remote.dto.TickerDto
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import java.math.BigDecimal
@@ -15,10 +15,11 @@ class ExchangeRepositoryImplTest {
     @Test
     fun `currencies API failure returns fallback currencies`() = runBlocking {
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 currenciesFailure = IllegalStateException("Not available yet")
             ),
-            cacheDataSource = cacheDataSource()
+            cacheDataSource = cacheDataSource(),
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         val result = repository.getAvailableCurrencies()
@@ -30,7 +31,7 @@ class ExchangeRepositoryImplTest {
     @Test
     fun `tickers API success returns exchange rates`() = runBlocking {
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 tickers = listOf(
                     TickerDto(
                         ask = "18.4105000000",
@@ -40,7 +41,8 @@ class ExchangeRepositoryImplTest {
                     )
                 )
             ),
-            cacheDataSource = cacheDataSource()
+            cacheDataSource = cacheDataSource(),
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         val result = repository.getExchangeRates(listOf("MXN"))
@@ -56,7 +58,7 @@ class ExchangeRepositoryImplTest {
     @Test
     fun `malformed ticker returns error instead of crashing`() = runBlocking {
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 tickers = listOf(
                     TickerDto(
                         ask = "18.4105000000",
@@ -66,7 +68,8 @@ class ExchangeRepositoryImplTest {
                     )
                 )
             ),
-            cacheDataSource = cacheDataSource()
+            cacheDataSource = cacheDataSource(),
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         val result = repository.getExchangeRates(listOf("MXN"))
@@ -78,7 +81,7 @@ class ExchangeRepositoryImplTest {
     fun `API success saves rates to cache`() = runBlocking {
         val cacheDataSource = cacheDataSource()
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 tickers = listOf(
                     TickerDto(
                         ask = "18.4105000000",
@@ -88,7 +91,8 @@ class ExchangeRepositoryImplTest {
                     )
                 )
             ),
-            cacheDataSource = cacheDataSource
+            cacheDataSource = cacheDataSource,
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         repository.getExchangeRates(listOf("MXN"))
@@ -104,10 +108,11 @@ class ExchangeRepositoryImplTest {
         val cacheDataSource = cacheDataSource()
         cacheDataSource.saveRates(listOf(mxnRate()))
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 tickersFailure = IllegalStateException("No connection")
             ),
-            cacheDataSource = cacheDataSource
+            cacheDataSource = cacheDataSource,
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         val result = repository.getExchangeRates(listOf("MXN"))
@@ -121,10 +126,11 @@ class ExchangeRepositoryImplTest {
     @Test
     fun `API failure with empty cache returns error`() = runBlocking {
         val repository = ExchangeRepositoryImpl(
-            api = FakeDollarApi(
+            remoteDataSource = FakeExchangeRemoteDataSource(
                 tickersFailure = IllegalStateException("No connection")
             ),
-            cacheDataSource = cacheDataSource()
+            cacheDataSource = cacheDataSource(),
+            fallbackCurrencyProvider = FallbackCurrencyProvider()
         )
 
         val result = repository.getExchangeRates(listOf("MXN"))
@@ -132,12 +138,12 @@ class ExchangeRepositoryImplTest {
         assertTrue(result is AppResult.Error)
     }
 
-    private class FakeDollarApi(
+    private class FakeExchangeRemoteDataSource(
         private val currencies: List<String> = emptyList(),
         private val tickers: List<TickerDto> = emptyList(),
         private val currenciesFailure: Exception? = null,
         private val tickersFailure: Exception? = null
-    ) : DollarApi {
+    ) : ExchangeRemoteDataSource {
         override suspend fun getTickers(currencies: String): List<TickerDto> {
             tickersFailure?.let { throw it }
             return tickers
