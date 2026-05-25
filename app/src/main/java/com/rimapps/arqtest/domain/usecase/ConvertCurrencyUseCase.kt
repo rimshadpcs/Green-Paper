@@ -1,6 +1,6 @@
 package com.rimapps.arqtest.domain.usecase
 
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.domain.model.ConversionDirection
 import com.rimapps.arqtest.domain.model.ConversionResult
 import com.rimapps.arqtest.domain.model.CurrencyAmount

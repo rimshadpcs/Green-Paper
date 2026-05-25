@@ -23,6 +23,7 @@ class ExchangeAmountProcessorTest {
 
         val result = processor.processAmountChange(
             state = state,
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Top,
             rawValue = ""
         )
@@ -38,6 +39,7 @@ class ExchangeAmountProcessorTest {
     fun `decimal point input is allowed as in progress decimal`() {
         val result = processor.processAmountChange(
             state = state(),
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Top,
             rawValue = "."
         )
@@ -53,6 +55,7 @@ class ExchangeAmountProcessorTest {
     fun `too large input sets amount error and clears converted amount`() {
         val result = processor.processAmountChange(
             state = state(bottomAmount = "180.00"),
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Top,
             rawValue = "9999999999999999999"
         )
@@ -67,10 +70,8 @@ class ExchangeAmountProcessorTest {
     @Test
     fun `missing rate sets rate unavailable state`() {
         val result = processor.processAmountChange(
-            state = state(
-                selectedCurrencyCode = "COP",
-                exchangeRates = listOf(mxnRate())
-            ),
+            state = state(selectedCurrencyCode = "COP"),
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Top,
             rawValue = "10"
         )
@@ -86,6 +87,7 @@ class ExchangeAmountProcessorTest {
     fun `valid USDc input converts quote amount`() {
         val result = processor.processAmountChange(
             state = state(),
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Top,
             rawValue = "10"
         )
@@ -103,6 +105,7 @@ class ExchangeAmountProcessorTest {
     fun `valid quote input converts USDc amount`() {
         val result = processor.processAmountChange(
             state = state(),
+            exchangeRates = listOf(mxnRate()),
             field = ExchangeAmountField.Bottom,
             rawValue = "180"
         )
@@ -118,7 +121,6 @@ class ExchangeAmountProcessorTest {
 
     private fun state(
         selectedCurrencyCode: String = "MXN",
-        exchangeRates: List<ExchangeRate> = listOf(mxnRate()),
         topAmount: String = "",
         bottomAmount: String = "",
         topAmountError: String? = null,
@@ -127,7 +129,6 @@ class ExchangeAmountProcessorTest {
     ): ExchangeUiState {
         return ExchangeUiState(
             selectedCurrencyCode = selectedCurrencyCode,
-            exchangeRates = exchangeRates,
             topCurrencyCode = ExchangeUiState.BASE_CURRENCY,
             bottomCurrencyCode = selectedCurrencyCode,
             topAmount = topAmount,
