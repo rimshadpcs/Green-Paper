@@ -1,10 +1,10 @@
 package com.rimapps.arqtest.presentation.exchange
 
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 
 sealed interface ExchangeUiEvent {
     data class AmountChanged(
-        val field: AmountInputField,
+        val field: ExchangeAmountField,
         val value: String
     ) : ExchangeUiEvent
 

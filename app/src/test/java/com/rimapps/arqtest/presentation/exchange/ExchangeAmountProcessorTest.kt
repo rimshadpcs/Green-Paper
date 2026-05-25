@@ -1,6 +1,6 @@
 package com.rimapps.arqtest.presentation.exchange
 
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.usecase.ConvertCurrencyUseCase
 import java.math.BigDecimal
@@ -23,7 +23,7 @@ class ExchangeAmountProcessorTest {
 
         val result = processor.processAmountChange(
             state = state,
-            field = AmountInputField.Top,
+            field = ExchangeAmountField.Top,
             rawValue = ""
         )
 
@@ -38,7 +38,7 @@ class ExchangeAmountProcessorTest {
     fun `decimal point input is allowed as in progress decimal`() {
         val result = processor.processAmountChange(
             state = state(),
-            field = AmountInputField.Top,
+            field = ExchangeAmountField.Top,
             rawValue = "."
         )
 
@@ -53,7 +53,7 @@ class ExchangeAmountProcessorTest {
     fun `too large input sets amount error and clears converted amount`() {
         val result = processor.processAmountChange(
             state = state(bottomAmount = "180.00"),
-            field = AmountInputField.Top,
+            field = ExchangeAmountField.Top,
             rawValue = "9999999999999999999"
         )
 
@@ -71,7 +71,7 @@ class ExchangeAmountProcessorTest {
                 selectedCurrencyCode = "COP",
                 exchangeRates = listOf(mxnRate())
             ),
-            field = AmountInputField.Top,
+            field = ExchangeAmountField.Top,
             rawValue = "10"
         )
 
@@ -86,7 +86,7 @@ class ExchangeAmountProcessorTest {
     fun `valid USDc input converts quote amount`() {
         val result = processor.processAmountChange(
             state = state(),
-            field = AmountInputField.Top,
+            field = ExchangeAmountField.Top,
             rawValue = "10"
         )
 
@@ -103,7 +103,7 @@ class ExchangeAmountProcessorTest {
     fun `valid quote input converts USDc amount`() {
         val result = processor.processAmountChange(
             state = state(),
-            field = AmountInputField.Bottom,
+            field = ExchangeAmountField.Bottom,
             rawValue = "180"
         )
 
