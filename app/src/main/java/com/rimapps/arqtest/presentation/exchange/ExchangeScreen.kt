@@ -366,7 +366,7 @@ private fun isAmountPlaceholder(
 }
 
 private const val CALCULATED_AMOUNT_TYPING_IDLE_MS = 650L
-private const val CALCULATED_AMOUNT_SHIMMER_MS = PLACEHOLDER_SHIMMER_MS * 3L
+private const val CALCULATED_AMOUNT_SHIMMER_MS = PLACEHOLDER_SHIMMER_MS * 2L
 private const val CALCULATED_AMOUNT_REVEAL_MS = 360L
 
 @Composable
