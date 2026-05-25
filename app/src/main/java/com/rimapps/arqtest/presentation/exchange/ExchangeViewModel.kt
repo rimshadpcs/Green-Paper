@@ -96,7 +96,7 @@ class ExchangeViewModel @Inject constructor(
 
             _uiState.update { state ->
                 state.copy(
-                    availableCurrencies = availableCurrencies,
+                    availableCurrencies = availableCurrencies.map { currency -> currency.toUiModel() },
                     selectedCurrencyCode = selectedCurrencyCode,
                     bottomCurrencyCode = if (state.topCurrencyCode == ExchangeUiState.BASE_CURRENCY) {
                         selectedCurrencyCode

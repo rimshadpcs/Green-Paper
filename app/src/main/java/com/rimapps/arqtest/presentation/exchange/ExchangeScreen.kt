@@ -37,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
 import com.rimapps.arqtest.domain.model.AmountInputField
-import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyAmountCard
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyCardCutout
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyPickerBottomSheet
@@ -46,6 +45,7 @@ import com.rimapps.arqtest.presentation.exchange.components.PLACEHOLDER_SHIMMER_
 import com.rimapps.arqtest.presentation.exchange.components.RateInfoChip
 import com.rimapps.arqtest.presentation.exchange.components.RateInfoText
 import com.rimapps.arqtest.presentation.exchange.components.SwapButton
+import com.rimapps.arqtest.presentation.exchange.model.CurrencyUiModel
 import java.math.BigDecimal
 import kotlinx.coroutines.delay
 
@@ -487,10 +487,10 @@ private fun ExchangeScreenUsdcTopPreview() {
         ExchangeScreenContent(
             state = ExchangeUiState(
                 availableCurrencies = listOf(
-                    Currency(code = "MXN"),
-                    Currency(code = "ARS"),
-                    Currency(code = "BRL"),
-                    Currency(code = "COP")
+                    "MXN".toPreviewCurrencyUiModel(),
+                    "ARS".toPreviewCurrencyUiModel(),
+                    "BRL".toPreviewCurrencyUiModel(),
+                    "COP".toPreviewCurrencyUiModel()
                 ),
                 topAmount = "10",
                 bottomAmount = "184.097",
@@ -566,8 +566,15 @@ private fun ExchangeScreenBottomSheetPreview() {
 }
 
 private val previewCurrencies = listOf(
-    Currency(code = "MXN"),
-    Currency(code = "ARS"),
-    Currency(code = "BRL"),
-    Currency(code = "COP")
+    "MXN".toPreviewCurrencyUiModel(),
+    "ARS".toPreviewCurrencyUiModel(),
+    "BRL".toPreviewCurrencyUiModel(),
+    "COP".toPreviewCurrencyUiModel()
 )
+
+private fun String.toPreviewCurrencyUiModel(): CurrencyUiModel {
+    return CurrencyUiModel(
+        code = this,
+        flagResId = flagDrawableResId()
+    )
+}
