@@ -1,6 +1,6 @@
 package com.rimapps.arqtest.presentation.exchange
 
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.model.ConversionDirection
 import com.rimapps.arqtest.domain.model.CurrencyAmount
@@ -17,6 +17,7 @@ class ExchangeAmountProcessor @Inject constructor(
 ) {
     fun processAmountChange(
         state: ExchangeUiState,
+        exchangeRates: List<ExchangeRate>,
         field: ExchangeAmountField,
         rawValue: String
     ): ExchangeUiState {
@@ -54,7 +55,7 @@ class ExchangeAmountProcessor @Inject constructor(
             ?: return state.withAmount(field, sanitizedValue)
                 .withAmountError(field, INVALID_AMOUNT_MESSAGE)
 
-        val selectedRate = state.exchangeRates.rateFor(state.selectedCurrencyCode)
+        val selectedRate = exchangeRates.rateFor(state.selectedCurrencyCode)
             ?: return state.withAmount(field, sanitizedValue).copy(
                 topAmountError = null,
                 bottomAmountError = null,

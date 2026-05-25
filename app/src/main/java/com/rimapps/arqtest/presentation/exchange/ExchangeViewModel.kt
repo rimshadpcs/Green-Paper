@@ -2,10 +2,11 @@ package com.rimapps.arqtest.presentation.exchange
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
-import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
+import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -28,6 +29,7 @@ class ExchangeViewModel @Inject constructor(
 
     private var lastEditedField: ExchangeAmountField = ExchangeAmountField.Top
     private var exchangeDataJob: Job? = null
+    private var exchangeRates: List<ExchangeRate> = emptyList()
 
     init {
         observeNetworkChanges()
@@ -152,11 +154,11 @@ class ExchangeViewModel @Inject constructor(
             is AppResult.Success -> {
                 _uiState.update { state ->
                     val rates = ratesResult.data.rates
+                    exchangeRates = rates
                     val selectedRate = rates.rateFor(selectedCurrencyCode)
                     state.copy(
                         isLoading = false,
                         isRefreshing = false,
-                        exchangeRates = rates,
                         isUsingCachedRates = ratesResult.data.isCached,
                         currentRate = selectedRate?.midpoint,
                         lastUpdated = selectedRate?.updatedAt,
@@ -186,6 +188,7 @@ class ExchangeViewModel @Inject constructor(
         _uiState.update { state ->
             amountProcessor.processAmountChange(
                 state = state.copy(activeAmountField = field),
+                exchangeRates = exchangeRates,
                 field = field,
                 rawValue = value
             )
@@ -247,7 +250,7 @@ class ExchangeViewModel @Inject constructor(
 
     private fun updateSelectedRateState() {
         _uiState.update { state ->
-            val selectedRate = state.exchangeRates.rateFor(state.selectedCurrencyCode)
+            val selectedRate = exchangeRates.rateFor(state.selectedCurrencyCode)
             state.copy(
                 currentRate = selectedRate?.midpoint,
                 lastUpdated = selectedRate?.updatedAt,

@@ -1,6 +1,6 @@
 package com.rimapps.arqtest.data.repository
 
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.data.local.ExchangeRateCacheDataSource
 import com.rimapps.arqtest.data.mapper.toDomain
 import com.rimapps.arqtest.data.remote.DollarApi

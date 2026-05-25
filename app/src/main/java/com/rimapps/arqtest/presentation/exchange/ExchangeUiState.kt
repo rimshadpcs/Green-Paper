@@ -1,6 +1,5 @@
 package com.rimapps.arqtest.presentation.exchange
 
-import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.presentation.exchange.model.CurrencyUiModel
 import java.math.BigDecimal
@@ -11,7 +10,6 @@ data class ExchangeUiState(
     val errorMessage: String? = null,
     val availableCurrencies: List<CurrencyUiModel> = emptyList(),
     val selectedCurrencyCode: String = DEFAULT_QUOTE_CURRENCY,
-    val exchangeRates: List<ExchangeRate> = emptyList(),
     val topCurrencyCode: String = BASE_CURRENCY,
     val bottomCurrencyCode: String = DEFAULT_QUOTE_CURRENCY,
     val topAmount: String = "",

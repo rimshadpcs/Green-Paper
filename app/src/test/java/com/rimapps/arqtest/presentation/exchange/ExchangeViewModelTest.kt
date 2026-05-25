@@ -1,7 +1,7 @@
 package com.rimapps.arqtest.presentation.exchange
 
 import androidx.lifecycle.viewModelScope
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
 import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.model.Currency
@@ -345,6 +345,25 @@ class ExchangeViewModelTest {
         assertBigDecimalEquals("20.00", state.currentRate)
     }
 
+    @Test
+    fun `refresh preserves selected currency and swapped card order`() = runViewModelTest {
+        val viewModel = viewModel(
+            repository = RefreshingExchangeRepository()
+        )
+        runCurrent()
+
+        viewModel.onEvent(ExchangeUiEvent.CurrencySelected("ARS"))
+        viewModel.onEvent(ExchangeUiEvent.SwapClicked)
+        viewModel.onEvent(ExchangeUiEvent.RefreshClicked)
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("ARS", state.selectedCurrencyCode)
+        assertEquals("ARS", state.topCurrencyCode)
+        assertEquals("USDc", state.bottomCurrencyCode)
+        assertBigDecimalEquals("1600.00", state.currentRate)
+    }
+
     private fun viewModel(
         repository: ExchangeRepository = FakeExchangeRepository(),
         networkMonitor: NetworkMonitor = FakeNetworkMonitor()
@@ -424,6 +443,35 @@ class ExchangeViewModelTest {
                     )
                 )
             }
+        }
+    }
+
+    private class RefreshingExchangeRepository : ExchangeRepository {
+        private var rateRequestCount = 0
+
+        override suspend fun getAvailableCurrencies(): AppResult<List<Currency>> {
+            return AppResult.Success(listOf(Currency("MXN"), Currency("ARS")))
+        }
+
+        override suspend fun getExchangeRates(currencyCodes: List<String>): AppResult<ExchangeRatesResult> {
+            rateRequestCount += 1
+            val arsRate = if (rateRequestCount == 1) {
+                arsRate()
+            } else {
+                ExchangeRate(
+                    baseCurrencyCode = "USDc",
+                    quoteCurrencyCode = "ARS",
+                    bid = BigDecimal("1590.00"),
+                    ask = BigDecimal("1610.00"),
+                    updatedAt = "2026-05-24T00:00:00Z"
+                )
+            }
+            return AppResult.Success(
+                ExchangeRatesResult(
+                    rates = listOf(mxnRate(), arsRate),
+                    isCached = false
+                )
+            )
         }
     }
 

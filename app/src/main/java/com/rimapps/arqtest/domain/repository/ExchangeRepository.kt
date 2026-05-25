@@ -1,6 +1,6 @@
 package com.rimapps.arqtest.domain.repository
 
-import com.rimapps.arqtest.core.common.AppResult
+import com.rimapps.arqtest.domain.common.AppResult
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.domain.model.ExchangeRatesResult
 
