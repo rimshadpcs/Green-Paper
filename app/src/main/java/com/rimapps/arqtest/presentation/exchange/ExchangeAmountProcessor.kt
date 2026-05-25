@@ -1,7 +1,7 @@
 package com.rimapps.arqtest.presentation.exchange
 
 import com.rimapps.arqtest.core.common.AppResult
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.model.ConversionDirection
 import com.rimapps.arqtest.domain.model.CurrencyAmount
 import com.rimapps.arqtest.domain.model.ExchangeRate
@@ -17,7 +17,7 @@ class ExchangeAmountProcessor @Inject constructor(
 ) {
     fun processAmountChange(
         state: ExchangeUiState,
-        field: AmountInputField,
+        field: ExchangeAmountField,
         rawValue: String
     ): ExchangeUiState {
         val validationResult = sanitizeAmountInput(
@@ -72,7 +72,7 @@ class ExchangeAmountProcessor @Inject constructor(
 
     private fun convertAmount(
         state: ExchangeUiState,
-        field: AmountInputField,
+        field: ExchangeAmountField,
         value: String,
         amount: BigDecimal,
         exchangeRate: ExchangeRate
@@ -117,61 +117,61 @@ class ExchangeAmountProcessor @Inject constructor(
         }
     }
 
-    private fun ExchangeUiState.currencyCodeFor(field: AmountInputField): String {
+    private fun ExchangeUiState.currencyCodeFor(field: ExchangeAmountField): String {
         return when (field) {
-            AmountInputField.Top -> topCurrencyCode
-            AmountInputField.Bottom -> bottomCurrencyCode
+            ExchangeAmountField.Top -> topCurrencyCode
+            ExchangeAmountField.Bottom -> bottomCurrencyCode
         }
     }
 
-    private fun ExchangeUiState.convertedCurrencyCodeFor(field: AmountInputField): String {
+    private fun ExchangeUiState.convertedCurrencyCodeFor(field: ExchangeAmountField): String {
         return when (field) {
-            AmountInputField.Top -> bottomCurrencyCode
-            AmountInputField.Bottom -> topCurrencyCode
+            ExchangeAmountField.Top -> bottomCurrencyCode
+            ExchangeAmountField.Bottom -> topCurrencyCode
         }
     }
 
     private fun ExchangeUiState.withAmount(
-        field: AmountInputField,
+        field: ExchangeAmountField,
         value: String
     ): ExchangeUiState {
         return when (field) {
-            AmountInputField.Top -> copy(topAmount = value)
-            AmountInputField.Bottom -> copy(bottomAmount = value)
+            ExchangeAmountField.Top -> copy(topAmount = value)
+            ExchangeAmountField.Bottom -> copy(bottomAmount = value)
         }
     }
 
     private fun ExchangeUiState.withConvertedAmount(
-        editedField: AmountInputField,
+        editedField: ExchangeAmountField,
         editedValue: String,
         convertedValue: String
     ): ExchangeUiState {
         return when (editedField) {
-            AmountInputField.Top -> copy(
+            ExchangeAmountField.Top -> copy(
                 topAmount = editedValue,
                 bottomAmount = convertedValue
             )
-            AmountInputField.Bottom -> copy(
+            ExchangeAmountField.Bottom -> copy(
                 topAmount = convertedValue,
                 bottomAmount = editedValue
             )
         }
     }
 
-    private fun ExchangeUiState.withClearedConvertedAmount(field: AmountInputField): ExchangeUiState {
+    private fun ExchangeUiState.withClearedConvertedAmount(field: ExchangeAmountField): ExchangeUiState {
         return when (field) {
-            AmountInputField.Top -> copy(bottomAmount = "")
-            AmountInputField.Bottom -> copy(topAmount = "")
+            ExchangeAmountField.Top -> copy(bottomAmount = "")
+            ExchangeAmountField.Bottom -> copy(topAmount = "")
         }
     }
 
     private fun ExchangeUiState.withAmountError(
-        field: AmountInputField,
+        field: ExchangeAmountField,
         message: String?
     ): ExchangeUiState {
         return when (field) {
-            AmountInputField.Top -> copy(topAmountError = message, bottomAmountError = null)
-            AmountInputField.Bottom -> copy(topAmountError = null, bottomAmountError = message)
+            ExchangeAmountField.Top -> copy(topAmountError = message, bottomAmountError = null)
+            ExchangeAmountField.Bottom -> copy(topAmountError = null, bottomAmountError = message)
         }
     }
 

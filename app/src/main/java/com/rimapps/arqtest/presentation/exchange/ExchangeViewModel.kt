@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rimapps.arqtest.core.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -26,7 +26,7 @@ class ExchangeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ExchangeUiState(isLoading = true))
     val uiState: StateFlow<ExchangeUiState> = _uiState.asStateFlow()
 
-    private var lastEditedField: AmountInputField = AmountInputField.Top
+    private var lastEditedField: ExchangeAmountField = ExchangeAmountField.Top
     private var exchangeDataJob: Job? = null
 
     init {
@@ -179,7 +179,7 @@ class ExchangeViewModel @Inject constructor(
     }
 
     private fun onAmountChanged(
-        field: AmountInputField,
+        field: ExchangeAmountField,
         value: String
     ) {
         lastEditedField = field
@@ -227,8 +227,8 @@ class ExchangeViewModel @Inject constructor(
             )
         }
         lastEditedField = when (lastEditedField) {
-            AmountInputField.Top -> AmountInputField.Bottom
-            AmountInputField.Bottom -> AmountInputField.Top
+            ExchangeAmountField.Top -> ExchangeAmountField.Bottom
+            ExchangeAmountField.Bottom -> ExchangeAmountField.Top
         }
         _uiState.update { state -> state.copy(activeAmountField = lastEditedField) }
     }
@@ -236,8 +236,8 @@ class ExchangeViewModel @Inject constructor(
     private fun recalculateFromLastEditedField() {
         val state = uiState.value
         val value = when (lastEditedField) {
-            AmountInputField.Top -> state.topAmount
-            AmountInputField.Bottom -> state.bottomAmount
+            ExchangeAmountField.Top -> state.topAmount
+            ExchangeAmountField.Bottom -> state.bottomAmount
         }
 
         if (value.isNotEmpty()) {

@@ -63,7 +63,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.presentation.exchange.flagDrawableResId
 import com.rimapps.arqtest.presentation.util.AmountVisualTransformation
 import com.rimapps.arqtest.presentation.util.maxDecimalPlacesForCurrency
@@ -73,7 +73,7 @@ import com.rimapps.arqtest.presentation.util.sanitizeAmountInput
 fun CurrencyAmountCard(
     currencyCode: String,
     amount: String,
-    amountInputField: AmountInputField,
+    amountInputField: ExchangeAmountField,
     isCurrencySelectable: Boolean,
     cutout: CurrencyCardCutout = CurrencyCardCutout.None,
     autoFocus: Boolean = false,
@@ -81,7 +81,7 @@ fun CurrencyAmountCard(
     isAmountShimmering: Boolean = false,
     isAmountRevealing: Boolean = false,
     onCurrencyClick: () -> Unit,
-    onAmountChange: (AmountInputField, String) -> Unit,
+    onAmountChange: (ExchangeAmountField, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
@@ -378,7 +378,7 @@ private fun CurrencyAmountCardPreview() {
         CurrencyAmountCard(
             currencyCode = "MXN",
             amount = "184065.59",
-            amountInputField = AmountInputField.Bottom,
+            amountInputField = ExchangeAmountField.Bottom,
             isCurrencySelectable = true,
             cutout = CurrencyCardCutout.Top,
             onCurrencyClick = {},

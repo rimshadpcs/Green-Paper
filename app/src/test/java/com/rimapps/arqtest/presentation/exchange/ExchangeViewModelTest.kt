@@ -3,7 +3,7 @@ package com.rimapps.arqtest.presentation.exchange
 import androidx.lifecycle.viewModelScope
 import com.rimapps.arqtest.core.common.AppResult
 import com.rimapps.arqtest.core.network.NetworkMonitor
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.model.ExchangeRatesResult
@@ -69,7 +69,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "10"
             )
         )
@@ -86,7 +86,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Bottom,
+                field = ExchangeAmountField.Bottom,
                 value = "180"
             )
         )
@@ -103,7 +103,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "12."
             )
         )
@@ -121,7 +121,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "."
             )
         )
@@ -139,7 +139,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "0."
             )
         )
@@ -157,7 +157,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "a1b2.c3"
             )
         )
@@ -175,7 +175,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "-12.50"
             )
         )
@@ -193,7 +193,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "12.3.4"
             )
         )
@@ -211,7 +211,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "9999999999999999999"
             )
         )
@@ -231,7 +231,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Top,
+                field = ExchangeAmountField.Top,
                 value = "1.1234567"
             )
         )
@@ -249,7 +249,7 @@ class ExchangeViewModelTest {
 
         viewModel.onEvent(
             ExchangeUiEvent.AmountChanged(
-                field = AmountInputField.Bottom,
+                field = ExchangeAmountField.Bottom,
                 value = "18.4097"
             )
         )

@@ -36,7 +36,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
-import com.rimapps.arqtest.domain.model.AmountInputField
+import com.rimapps.arqtest.presentation.exchange.model.ExchangeAmountField
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyAmountCard
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyCardCutout
 import com.rimapps.arqtest.presentation.exchange.components.CurrencyPickerBottomSheet
@@ -66,15 +66,15 @@ private fun ExchangeScreenContent(
     state: ExchangeUiState,
     onEvent: (ExchangeUiEvent) -> Unit
 ) {
-    var heldCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
-    var shimmeringCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
-    var revealingCalculatedField by remember { mutableStateOf<AmountInputField?>(null) }
+    var heldCalculatedField by remember { mutableStateOf<ExchangeAmountField?>(null) }
+    var shimmeringCalculatedField by remember { mutableStateOf<ExchangeAmountField?>(null) }
+    var revealingCalculatedField by remember { mutableStateOf<ExchangeAmountField?>(null) }
     var previousTopCurrencyCode by remember { mutableStateOf(state.topCurrencyCode) }
     var previousBottomCurrencyCode by remember { mutableStateOf(state.bottomCurrencyCode) }
     var skipAmountFeedbackOnce by remember { mutableStateOf(false) }
 
     fun handleAmountChange(
-        field: AmountInputField,
+        field: ExchangeAmountField,
         value: String
     ) {
         if (value.isNotEmpty()) {
@@ -113,12 +113,12 @@ private fun ExchangeScreenContent(
         }
 
         val activeAmount = when (state.activeAmountField) {
-            AmountInputField.Top -> state.topAmount
-            AmountInputField.Bottom -> state.bottomAmount
+            ExchangeAmountField.Top -> state.topAmount
+            ExchangeAmountField.Bottom -> state.bottomAmount
         }
         val hasActiveError = when (state.activeAmountField) {
-            AmountInputField.Top -> state.topAmountError != null
-            AmountInputField.Bottom -> state.bottomAmountError != null
+            ExchangeAmountField.Top -> state.topAmountError != null
+            ExchangeAmountField.Bottom -> state.bottomAmountError != null
         }
 
         val calculatedField = if (activeAmount.isNotEmpty() && !hasActiveError) {
@@ -250,22 +250,22 @@ private fun ExchangeScreenContent(
                             currencyCode = state.topCurrencyCode,
                             amount = amountDisplayValue(
                                 amount = state.topAmount,
-                                field = AmountInputField.Top,
+                                field = ExchangeAmountField.Top,
                                 heldCalculatedField = heldCalculatedField,
                                 shimmeringCalculatedField = shimmeringCalculatedField
                             ),
-                            amountInputField = AmountInputField.Top,
+                            amountInputField = ExchangeAmountField.Top,
                             isCurrencySelectable = state.topCurrencyCode != ExchangeUiState.BASE_CURRENCY,
                             cutout = CurrencyCardCutout.Bottom,
                             autoFocus = true,
                             isAmountPlaceholder = isAmountPlaceholder(
                                 amount = state.topAmount,
-                                field = AmountInputField.Top,
+                                field = ExchangeAmountField.Top,
                                 heldCalculatedField = heldCalculatedField,
                                 shimmeringCalculatedField = shimmeringCalculatedField
                             ),
-                            isAmountShimmering = shimmeringCalculatedField == AmountInputField.Top,
-                            isAmountRevealing = revealingCalculatedField == AmountInputField.Top,
+                            isAmountShimmering = shimmeringCalculatedField == ExchangeAmountField.Top,
+                            isAmountRevealing = revealingCalculatedField == ExchangeAmountField.Top,
                             onCurrencyClick = { onEvent(ExchangeUiEvent.CurrencyPickerOpened) },
                             onAmountChange = { field, value ->
                                 handleAmountChange(field, value)
@@ -288,21 +288,21 @@ private fun ExchangeScreenContent(
                             currencyCode = state.bottomCurrencyCode,
                             amount = amountDisplayValue(
                                 amount = state.bottomAmount,
-                                field = AmountInputField.Bottom,
+                                field = ExchangeAmountField.Bottom,
                                 heldCalculatedField = heldCalculatedField,
                                 shimmeringCalculatedField = shimmeringCalculatedField
                             ),
-                            amountInputField = AmountInputField.Bottom,
+                            amountInputField = ExchangeAmountField.Bottom,
                             isCurrencySelectable = state.bottomCurrencyCode != ExchangeUiState.BASE_CURRENCY,
                             cutout = CurrencyCardCutout.Top,
                             isAmountPlaceholder = isAmountPlaceholder(
                                 amount = state.bottomAmount,
-                                field = AmountInputField.Bottom,
+                                field = ExchangeAmountField.Bottom,
                                 heldCalculatedField = heldCalculatedField,
                                 shimmeringCalculatedField = shimmeringCalculatedField
                             ),
-                            isAmountShimmering = shimmeringCalculatedField == AmountInputField.Bottom,
-                            isAmountRevealing = revealingCalculatedField == AmountInputField.Bottom,
+                            isAmountShimmering = shimmeringCalculatedField == ExchangeAmountField.Bottom,
+                            isAmountRevealing = revealingCalculatedField == ExchangeAmountField.Bottom,
                             onCurrencyClick = { onEvent(ExchangeUiEvent.CurrencyPickerOpened) },
                             onAmountChange = { field, value ->
                                 handleAmountChange(field, value)
@@ -336,18 +336,18 @@ private fun ExchangeScreenContent(
     }
 }
 
-private fun AmountInputField.opposite(): AmountInputField {
+private fun ExchangeAmountField.opposite(): ExchangeAmountField {
     return when (this) {
-        AmountInputField.Top -> AmountInputField.Bottom
-        AmountInputField.Bottom -> AmountInputField.Top
+        ExchangeAmountField.Top -> ExchangeAmountField.Bottom
+        ExchangeAmountField.Bottom -> ExchangeAmountField.Top
     }
 }
 
 private fun amountDisplayValue(
     amount: String,
-    field: AmountInputField,
-    heldCalculatedField: AmountInputField?,
-    shimmeringCalculatedField: AmountInputField?
+    field: ExchangeAmountField,
+    heldCalculatedField: ExchangeAmountField?,
+    shimmeringCalculatedField: ExchangeAmountField?
 ): String {
     return if (field == heldCalculatedField || field == shimmeringCalculatedField) {
         ""
@@ -358,9 +358,9 @@ private fun amountDisplayValue(
 
 private fun isAmountPlaceholder(
     amount: String,
-    field: AmountInputField,
-    heldCalculatedField: AmountInputField?,
-    shimmeringCalculatedField: AmountInputField?
+    field: ExchangeAmountField,
+    heldCalculatedField: ExchangeAmountField?,
+    shimmeringCalculatedField: ExchangeAmountField?
 ): Boolean {
     return amount.isEmpty() || field == heldCalculatedField || field == shimmeringCalculatedField
 }
