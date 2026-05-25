@@ -205,7 +205,9 @@ fun CurrencyAmountCard(
                             text = sanitizedInput.text,
                             selection = TextRange(sanitizedInput.selection)
                         )
-                        onAmountChange(amountInputField, sanitizedInput.text)
+                        if (sanitizedInput.text != amount) {
+                            onAmountChange(amountInputField, sanitizedInput.text)
+                        }
                     },
                     textStyle = MaterialTheme.typography.titleLarge.copy(
                         color = amountTextColor(
