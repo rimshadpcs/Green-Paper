@@ -29,15 +29,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rimapps.arqtest.core.designsystem.theme.ArqTestTheme
-import com.rimapps.arqtest.domain.model.Currency
-import com.rimapps.arqtest.presentation.exchange.toUiModel
+import com.rimapps.arqtest.presentation.exchange.flagDrawableResId
+import com.rimapps.arqtest.presentation.exchange.model.CurrencyUiModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CurrencyPickerBottomSheet(
-    currencies: List<Currency>,
+    currencies: List<CurrencyUiModel>,
     selectedCurrencyCode: String,
     onCurrencySelected: (String) -> Unit,
     onDismiss: () -> Unit
@@ -92,21 +92,20 @@ fun CurrencyPickerBottomSheet(
                     )
                     .padding(vertical = 8.dp)
             ) {
-                currencies.map { currency -> currency.toUiModel() }
-                    .forEach { currency ->
-                        CurrencyListItem(
-                            currency = currency,
-                            isSelected = currency.code.equals(selectedCurrencyCode, ignoreCase = true),
-                            onClick = {
-                                onCurrencySelected(currency.code)
-                                coroutineScope.launch {
-                                    delay(SELECTION_FEEDBACK_DELAY_MS)
-                                    sheetState.hide()
-                                    onDismiss()
-                                }
+                currencies.forEach { currency ->
+                    CurrencyListItem(
+                        currency = currency,
+                        isSelected = currency.code.equals(selectedCurrencyCode, ignoreCase = true),
+                        onClick = {
+                            onCurrencySelected(currency.code)
+                            coroutineScope.launch {
+                                delay(SELECTION_FEEDBACK_DELAY_MS)
+                                sheetState.hide()
+                                onDismiss()
                             }
-                        )
-                    }
+                        }
+                    )
+                }
             }
         }
     }
@@ -120,10 +119,10 @@ private fun CurrencyPickerBottomSheetPreview() {
     ArqTestTheme {
         CurrencyPickerBottomSheet(
             currencies = listOf(
-                Currency(code = "ARS"),
-                Currency(code = "COP"),
-                Currency(code = "MXN"),
-                Currency(code = "BRL")
+                CurrencyUiModel(code = "ARS", flagResId = "ARS".flagDrawableResId()),
+                CurrencyUiModel(code = "COP", flagResId = "COP".flagDrawableResId()),
+                CurrencyUiModel(code = "MXN", flagResId = "MXN".flagDrawableResId()),
+                CurrencyUiModel(code = "BRL", flagResId = "BRL".flagDrawableResId())
             ),
             selectedCurrencyCode = "MXN",
             onCurrencySelected = {},
