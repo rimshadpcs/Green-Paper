@@ -8,6 +8,7 @@ import com.rimapps.arqtest.domain.model.Currency
 import com.rimapps.arqtest.domain.model.ExchangeRate
 import com.rimapps.arqtest.domain.model.ExchangeRatesResult
 import com.rimapps.arqtest.domain.repository.ExchangeRepository
+import com.rimapps.arqtest.domain.repository.SelectedCurrencyRepository
 import com.rimapps.arqtest.domain.usecase.ConvertCurrencyUseCase
 import java.math.BigDecimal
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -60,6 +61,87 @@ class ExchangeViewModelTest {
         val state = viewModel.uiState.value
         assertFalse(state.isLoading)
         assertEquals("Unable to load currencies", state.errorMessage)
+    }
+
+    @Test
+    fun `saved selected currency is restored on initial load`() = runViewModelTest {
+        val viewModel = viewModel(
+            selectedCurrencyRepository = FakeSelectedCurrencyRepository(savedCurrencyCode = "ars")
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("ARS", state.selectedCurrencyCode)
+        assertEquals("ARS", state.bottomCurrencyCode)
+        assertBigDecimalEquals("1500.00", state.currentRate)
+    }
+
+    @Test
+    fun `saved selected currency position is restored on initial load`() = runViewModelTest {
+        val viewModel = viewModel(
+            selectedCurrencyRepository = FakeSelectedCurrencyRepository(
+                savedCurrencyCode = "ars",
+                savedQuoteCurrencyIsFirst = true
+            )
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("ARS", state.selectedCurrencyCode)
+        assertEquals("ARS", state.topCurrencyCode)
+        assertEquals("USDc", state.bottomCurrencyCode)
+        assertBigDecimalEquals("1500.00", state.currentRate)
+    }
+
+    @Test
+    fun `missing saved selected currency defaults to MXN`() = runViewModelTest {
+        val viewModel = viewModel(
+            selectedCurrencyRepository = FakeSelectedCurrencyRepository(savedCurrencyCode = null)
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("MXN", state.selectedCurrencyCode)
+        assertEquals("MXN", state.bottomCurrencyCode)
+    }
+
+    @Test
+    fun `unavailable saved selected currency falls back to MXN when available`() = runViewModelTest {
+        val viewModel = viewModel(
+            selectedCurrencyRepository = FakeSelectedCurrencyRepository(savedCurrencyCode = "COP")
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("MXN", state.selectedCurrencyCode)
+        assertEquals("MXN", state.bottomCurrencyCode)
+    }
+
+    @Test
+    fun `unavailable saved selected currency falls back to first available when MXN is unavailable`() = runViewModelTest {
+        val viewModel = viewModel(
+            repository = FakeExchangeRepository(
+                currenciesResult = AppResult.Success(listOf(Currency("ARS"))),
+                ratesResult = AppResult.Success(
+                    ExchangeRatesResult(
+                        rates = listOf(arsRate()),
+                        isCached = false
+                    )
+                )
+            ),
+            selectedCurrencyRepository = FakeSelectedCurrencyRepository(savedCurrencyCode = "COP")
+        )
+
+        runCurrent()
+
+        val state = viewModel.uiState.value
+        assertEquals("ARS", state.selectedCurrencyCode)
+        assertEquals("ARS", state.bottomCurrencyCode)
+        assertBigDecimalEquals("1500.00", state.currentRate)
     }
 
     @Test
@@ -274,15 +356,18 @@ class ExchangeViewModelTest {
 
     @Test
     fun `currency selected updates selected currency`() = runViewModelTest {
-        val viewModel = viewModel()
+        val selectedCurrencyRepository = FakeSelectedCurrencyRepository()
+        val viewModel = viewModel(selectedCurrencyRepository = selectedCurrencyRepository)
         runCurrent()
 
         viewModel.onEvent(ExchangeUiEvent.CurrencySelected("ARS"))
+        runCurrent()
 
         val state = viewModel.uiState.value
         assertEquals("ARS", state.selectedCurrencyCode)
         assertEquals("ARS", state.bottomCurrencyCode)
         assertBigDecimalEquals("1500.00", state.currentRate)
+        assertEquals("ARS", selectedCurrencyRepository.savedCurrencyCode)
     }
 
     @Test
@@ -347,12 +432,15 @@ class ExchangeViewModelTest {
 
     @Test
     fun `refresh preserves selected currency and swapped card order`() = runViewModelTest {
+        val selectedCurrencyRepository = FakeSelectedCurrencyRepository()
         val viewModel = viewModel(
-            repository = RefreshingExchangeRepository()
+            repository = RefreshingExchangeRepository(),
+            selectedCurrencyRepository = selectedCurrencyRepository
         )
         runCurrent()
 
         viewModel.onEvent(ExchangeUiEvent.CurrencySelected("ARS"))
+        runCurrent()
         viewModel.onEvent(ExchangeUiEvent.SwapClicked)
         viewModel.onEvent(ExchangeUiEvent.RefreshClicked)
         runCurrent()
@@ -362,16 +450,20 @@ class ExchangeViewModelTest {
         assertEquals("ARS", state.topCurrencyCode)
         assertEquals("USDc", state.bottomCurrencyCode)
         assertBigDecimalEquals("1600.00", state.currentRate)
+        assertEquals("ARS", selectedCurrencyRepository.savedCurrencyCode)
+        assertTrue(selectedCurrencyRepository.savedQuoteCurrencyIsFirst == true)
     }
 
     private fun viewModel(
         repository: ExchangeRepository = FakeExchangeRepository(),
-        networkMonitor: NetworkMonitor = FakeNetworkMonitor()
+        networkMonitor: NetworkMonitor = FakeNetworkMonitor(),
+        selectedCurrencyRepository: FakeSelectedCurrencyRepository = FakeSelectedCurrencyRepository()
     ): ExchangeViewModel {
         return ExchangeViewModel(
             exchangeRepository = repository,
             amountProcessor = ExchangeAmountProcessor(ConvertCurrencyUseCase()),
-            networkMonitor = networkMonitor
+            networkMonitor = networkMonitor,
+            selectedCurrencyRepository = selectedCurrencyRepository
         ).also { viewModel ->
             createdViewModels += viewModel
         }
@@ -482,6 +574,32 @@ class ExchangeViewModelTest {
 
         suspend fun emitOnline(isOnline: Boolean) {
             onlineEvents.emit(isOnline)
+        }
+    }
+
+    private class FakeSelectedCurrencyRepository(
+        savedCurrencyCode: String? = null,
+        savedQuoteCurrencyIsFirst: Boolean? = null
+    ) : SelectedCurrencyRepository {
+        var savedCurrencyCode: String? = savedCurrencyCode
+            private set
+        var savedQuoteCurrencyIsFirst: Boolean? = savedQuoteCurrencyIsFirst
+            private set
+
+        override suspend fun getSelectedCurrencyCode(): String? {
+            return savedCurrencyCode
+        }
+
+        override suspend fun saveSelectedCurrencyCode(currencyCode: String) {
+            savedCurrencyCode = currencyCode.trim().uppercase()
+        }
+
+        override suspend fun getSelectedQuoteCurrencyIsFirst(): Boolean? {
+            return savedQuoteCurrencyIsFirst
+        }
+
+        override suspend fun saveSelectedQuoteCurrencyIsFirst(isFirst: Boolean) {
+            savedQuoteCurrencyIsFirst = isFirst
         }
     }
 
