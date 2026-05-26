@@ -65,7 +65,7 @@ fun ExchangeScreen(
 }
 
 @Composable
-private fun ExchangeScreenContent(
+ fun ExchangeScreenContent(
     state: ExchangeUiState,
     onEvent: (ExchangeUiEvent) -> Unit
 ) {
