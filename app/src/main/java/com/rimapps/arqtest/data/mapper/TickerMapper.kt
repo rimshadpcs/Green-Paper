@@ -2,7 +2,6 @@ package com.rimapps.arqtest.data.mapper
 
 import com.rimapps.arqtest.data.remote.dto.TickerDto
 import com.rimapps.arqtest.domain.model.ExchangeRate
-import java.math.BigDecimal
 
 fun TickerDto.toDomain(): ExchangeRate {
     val parts = book.split("_")

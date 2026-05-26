@@ -67,16 +67,26 @@ fun RateInfoChip(
 
     Row(
         modifier = modifier
-            .size(width = 190.dp, height = 42.dp)
+            .size(
+                width = if (isUsingCachedRates) 232.dp else 190.dp,
+                height = 42.dp
+            )
             .clip(RoundedCornerShape(24.dp))
             .background(ChipBackground)
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RateInfoIcon(
+            isWarning = isUsingCachedRates,
             modifier = Modifier
                 .size(16.dp)
-                .semantics { contentDescription = "Rate information" }
+                .semantics {
+                    contentDescription = if (isUsingCachedRates) {
+                        "Cached rate warning"
+                    } else {
+                        "Rate information"
+                    }
+                }
         )
         Spacer(modifier = Modifier.width(8.dp))
         AnimatedContent(
@@ -144,6 +154,7 @@ private fun String?.parseRateChipDate() = runCatching {
 
 @Composable
 private fun RateInfoIcon(
+    isWarning: Boolean,
     modifier: Modifier = Modifier
 ) {
     Canvas(modifier = modifier) {
@@ -151,20 +162,37 @@ private fun RateInfoIcon(
             color = ChipContent,
             style = Stroke(width = 1.6.dp.toPx())
         )
-        drawLine(
-            color = ChipContent,
-            start = Offset(size.width * 0.50f, size.height * 0.28f),
-            end = Offset(size.width * 0.50f, size.height * 0.52f),
-            strokeWidth = 1.6.dp.toPx(),
-            cap = StrokeCap.Round
-        )
-        drawLine(
-            color = ChipContent,
-            start = Offset(size.width * 0.50f, size.height * 0.52f),
-            end = Offset(size.width * 0.68f, size.height * 0.62f),
-            strokeWidth = 1.6.dp.toPx(),
-            cap = StrokeCap.Round
-        )
+        if (isWarning) {
+            drawLine(
+                color = ChipContent,
+                start = Offset(size.width * 0.50f, size.height * 0.26f),
+                end = Offset(size.width * 0.50f, size.height * 0.58f),
+                strokeWidth = 1.8.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = ChipContent,
+                start = Offset(size.width * 0.50f, size.height * 0.74f),
+                end = Offset(size.width * 0.50f, size.height * 0.75f),
+                strokeWidth = 2.2.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        } else {
+            drawLine(
+                color = ChipContent,
+                start = Offset(size.width * 0.50f, size.height * 0.28f),
+                end = Offset(size.width * 0.50f, size.height * 0.52f),
+                strokeWidth = 1.6.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            drawLine(
+                color = ChipContent,
+                start = Offset(size.width * 0.50f, size.height * 0.52f),
+                end = Offset(size.width * 0.68f, size.height * 0.62f),
+                strokeWidth = 1.6.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+        }
     }
 }
 

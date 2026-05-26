@@ -93,7 +93,7 @@ fun CurrencyListItem(
                     cap = StrokeCap.Round
                 )
                 drawLine(
-                    color = androidx.compose.ui.graphics.Color.White,
+                    color = Color.White,
                     start = Offset(size.width * 0.45f, size.height * 0.68f),
                     end = Offset(size.width * 0.72f, size.height * 0.34f),
                     strokeWidth = 2.5.dp.toPx(),
