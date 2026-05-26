@@ -1,5 +1,6 @@
 package com.rimapps.arqtest.presentation.exchange.components
 
+import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.LinearEasing
@@ -26,7 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.MaterialTheme
@@ -82,7 +82,7 @@ fun CurrencyAmountCard(
     isAmountRevealing: Boolean = false,
     onCurrencyClick: () -> Unit,
     onAmountChange: (ExchangeAmountField, String) -> Unit,
-    modifier: Modifier = Modifier
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -211,8 +211,7 @@ fun CurrencyAmountCard(
                     },
                     textStyle = MaterialTheme.typography.titleLarge.copy(
                         color = amountTextColor(
-                            isPlaceholder = isAmountPlaceholder,
-                            isShimmering = isAmountShimmering
+                            isPlaceholder = isAmountPlaceholder
                         ),
                         textAlign = TextAlign.End,
                         fontWeight = FontWeight.ExtraBold,
@@ -238,8 +237,7 @@ fun CurrencyAmountCard(
                         unfocusedIndicatorColor = Color.Transparent,
                         focusedTextColor = amountTextColor(isAmountPlaceholder),
                         unfocusedTextColor = amountTextColor(
-                            isPlaceholder = isAmountPlaceholder,
-                            isShimmering = isAmountShimmering
+                            isPlaceholder = isAmountPlaceholder
                         ),
                         cursorColor = CursorBlue
                     ),
@@ -270,8 +268,7 @@ private fun Modifier.cardContainer(
 
 @Composable
 private fun amountTextColor(
-    isPlaceholder: Boolean,
-    isShimmering: Boolean = false
+    isPlaceholder: Boolean
 ): Color {
     return if (isPlaceholder) {
         MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.48f)

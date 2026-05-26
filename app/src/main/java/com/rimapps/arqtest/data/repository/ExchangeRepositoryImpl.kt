@@ -22,7 +22,7 @@ class ExchangeRepositoryImpl @Inject constructor(
                 .ifEmpty { fallbackCurrencyProvider.currencies() }
 
             AppResult.Success(currencies)
-        } catch (exception: Exception) {
+        } catch (_: Exception) {
             AppResult.Success(fallbackCurrencyProvider.currencies())
         }
     }

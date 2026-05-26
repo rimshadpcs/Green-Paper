@@ -2,7 +2,6 @@ package com.rimapps.arqtest.presentation.exchange
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -19,7 +18,6 @@ class ExchangeScreenTest {
 
     @Test
     fun exchangeScreenContent_showsTitleRateCardsAndSwapButton() {
-        var emittedEvent: ExchangeUiEvent? = null
 
         composeTestRule.setContent {
             ArqTestTheme {
@@ -31,8 +29,6 @@ class ExchangeScreenTest {
                         lastUpdated = "2026-05-23T00:00:00Z"
                     ),
                     onEvent = { event ->
-                        emittedEvent = event
-
                     }
                 )
 
